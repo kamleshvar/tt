@@ -1,0 +1,13 @@
+﻿{% extends "base.html" %}
+{% block title %}400 · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="error-page">
+  <p class="error-code">400</p>
+  <h1>That request could not be understood</h1>
+  <p>The form may have expired or contained invalid data. Refresh the page and try again.</p>
+  <div class="button-row">
+    <a class="btn btn-primary" href="{{ url_for('index') }}">Return to start</a>
+    <button class="btn btn-quiet" type="button" data-history-back>Go back</button>
+  </div>
+</div>
+{% endblock %}

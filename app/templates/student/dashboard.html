@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import progress_bar, task_row, empty_state %}
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ current_user.profile.board }} · Class 12 · {{ current_user.profile.academic_year }}</p>
+    <h1>Good to see you, {{ current_user.full_name.split()[0] }}.</h1>
+    <p class="page-sub">{{ today|datefmt('%A, %d %B %Y') }} · Your plan is built from actual free time, not wishful thinking.</p>
+  </div>
+  <div class="head-actions">
+    {% if plan %}
+    <form method="post" action="{{ url_for('student.generate_plan_route') }}" data-confirm="Regenerate the plan? Completed tasks will be preserved; open tasks will be replaced.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-quiet" type="submit">Regenerate plan</button>
+    </form>
+    {% endif %}
+    <a class="btn btn-primary" href="{{ url_for('student.daily_plan') }}">Open today’s plan</a>
+  </div>
+</div>
+
+{% if not plan %}
+<div class="banner banner-neutral">
+  <div>
+    <strong>Your timetable is ready to be built.</strong>
+    <p>Generate a plan using your onboarding schedule and selected subjects. You can regenerate at any time without losing completed work.</p>
+  </div>
+  <form method="post" action="{{ url_for('student.generate_plan_route') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary" type="submit">Generate my plan</button>
+  </form>
+</div>
+{% elif plan.warnings %}
+<div class="banner {{ 'banner-danger' if not plan.feasible else 'banner-warn' }}">
+  <div>
+    <strong>{{ 'Workload warning' if not plan.feasible else 'Planner notes' }}</strong>
+    <p>{{ plan.warnings[0] }}</p>
+    {% if plan.warnings|length > 1 %}
+    <details class="inline-details"><summary>Read all {{ plan.warnings|length }} notes</summary><ul>{% for warning in plan.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></details>
+    {% endif %}
+  </div>
+  <a class="btn btn-small btn-quiet" href="{{ url_for('student.recovery') }}">Missed work</a>
+</div>
+{% endif %}
+
+<div class="metric-grid">
+  <div class="metric-card glass">
+    <span class="metric-label">Board countdown</span>
+    {% if days_remaining is not none %}
+    <strong class="metric-value">{{ days_remaining }}<small>days</small></strong>
+    <span class="metric-note">until {{ current_user.profile.exam_date|datefmt('%d %b %Y') }}</span>
+    {% else %}
+    <strong class="metric-value small">Not set</strong>
+    <span class="metric-note">Add the exam date for deadline warnings</span>
+    {% endif %}
+  </div>
+  <div class="metric-card glass">
+    <span class="metric-label">Today planned</span>
+    <strong class="metric-value">{{ today_planned|duration }}</strong>
+    <span class="metric-note">{{ today_tasks|length }} scheduled task{{ '' if today_tasks|length == 1 else 's' }}</span>
+  </div>
+  <div class="metric-card glass">
+    <span class="metric-label">Today completed</span>
+    <strong class="metric-value">{{ today_completed|duration }}</strong>
+    <span class="metric-note">{{ (today_completed / today_planned * 100)|round|int if today_planned else 0 }}% of today’s plan</span>
+  </div>
+  <div class="metric-card glass">
+    <span class="metric-label">Open / overdue</span>
+    <strong class="metric-value">{{ snapshot.tasks.open }}<small>/ {{ snapshot.tasks.overdue }}</small></strong>
+    <span class="metric-note">across the current plan history</span>
+  </div>
+</div>
+
+<section class="panel workload-summary-panel">
+  <div class="section-head">
+    <div><p class="eyebrow">Chapter workload</p><h2>Hours still ahead</h2></div>
+    <a class="text-link" href="{{ url_for('student.workload') }}">Adjust confidence →</a>
+  </div>
+  <div class="summary-lines summary-lines-wide">
+    <div><span>Default workload</span><strong>{{ workload.base_minutes|duration }}</strong></div>
+    <div><span>Personalized</span><strong>{{ workload.personalized_minutes|duration }}</strong></div>
+    <div><span>Completed</span><strong>{{ workload.completed_minutes|duration }}</strong></div>
+    <div><span>Remaining</span><strong>{{ workload.remaining_minutes|duration }}</strong></div>
+    <div><span>Capacity</span><strong>{{ workload.capacity_minutes|duration }}</strong></div>
+  </div>
+  <p class="fine-print {{ 'text-danger' if not workload.feasible else '' }}">
+    {% if workload.feasible %}
+    The remaining estimate fits the current capacity. This is a planning estimate, not readiness.
+    {% else %}
+    The remaining estimate exceeds available time by about {{ (workload.remaining_minutes - workload.capacity_minutes)|duration }}. Reduce workload or extend the deadline; the planner reports unplaced work instead of hiding it.
+    {% endif %}
+    {{ workload.at_risk_count }} chapter{{ '' if workload.at_risk_count == 1 else 's' }} are at risk by priority.
+  </p>
+</section>
+
+<div class="dashboard-grid">
+  <section class="panel today-panel">
+    <div class="section-head">
+      <div><p class="eyebrow">Today</p><h2>Your study schedule</h2></div>
+      <a class="text-link" href="{{ url_for('student.daily_plan', date=today.isoformat()) }}">Full day →</a>
+    </div>
+    {% if today_tasks %}
+    <div class="task-list">
+      {% for task in today_tasks %}{{ task_row(task, show_date=False) }}{% endfor %}
+    </div>
+    {% else %}
+      {{ empty_state('Nothing scheduled today', 'A clear day is allowed. Review the week, or regenerate if your routine has changed.', url_for('student.weekly_plan'), 'View this week') }}
+    {% endif %}
+  </section>
+
+  <aside class="dashboard-side">
+    <section class="panel">
+      <div class="section-head compact-head"><div><p class="eyebrow">This week</p><h2>Study summary</h2></div></div>
+      <div class="summary-lines">
+        <div><span>Planned</span><strong>{{ week.planned_minutes|duration }}</strong></div>
+        <div><span>Completed</span><strong>{{ week.completed_minutes|duration }}</strong></div>
+        <div><span>Tasks done</span><strong>{{ week.completed }}/{{ week.total }}</strong></div>
+        <div><span>Overdue</span><strong class="{{ 'text-danger' if week.overdue }}">{{ week.overdue }}</strong></div>
+      </div>
+      {{ progress_bar(week.completion_percent, week.completion_percent|string ~ '% task completion') }}
+      <p class="fine-print">Declared completion is not treated as proof of understanding. Revision and mock-test metrics stay separate.</p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head compact-head"><div><p class="eyebrow">Next</p><h2>Tests & deadlines</h2></div><a class="text-link" href="{{ url_for('student.mock_tests') }}">Mocks →</a></div>
+      {% if upcoming or deadlines %}
+      <ul class="timeline-list">
+        {% for exam in deadlines %}
+        <li><span class="timeline-date">{{ exam.exam_date|datefmt('%d %b') }}</span><div><strong>{{ exam.title }}</strong><span>{{ exam.exam_type|capitalize }}</span></div></li>
+        {% endfor %}
+        {% for test in upcoming %}
+        <li><span class="timeline-date">{{ test.scheduled_date|datefmt('%d %b') }}</span><div><strong>{{ test.title }}</strong><span>{{ test.duration_minutes|duration }} · mock test</span></div></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No upcoming tests or deadlines recorded.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel soft-panel">
+      <p class="eyebrow">Weekly capacity</p>
+      <div class="capacity-split">
+        <div><strong>{{ snapshot.free_minutes_next_7_days|duration }}</strong><span>Free capacity, next 7 days</span></div>
+        <div><strong>{{ snapshot.planned_open_minutes_next_7_days|duration }}</strong><span>Open planned study</span></div>
+      </div>
+      <p class="fine-print">Free capacity is time left after commitments, sleep, travel and existing tasks. It is not a measure of preparation.</p>
+    </section>
+  </aside>
+</div>
+
+<section class="section-block">
+  <div class="section-head">
+    <div><p class="eyebrow">Progress, kept separate</p><h2>What is actually moving?</h2></div>
+    <a class="text-link" href="{{ url_for('student.subjects') }}">Chapter detail →</a>
+  </div>
+  <div class="progress-grid">
+    <div class="progress-card glass">
+      <span class="metric-label">Task completion</span>
+      <strong>{{ snapshot.task_completion }}%</strong>
+      {{ progress_bar(snapshot.task_completion) }}
+      <p>{{ snapshot.tasks.completed }} of {{ snapshot.tasks.total }} generated tasks checked</p>
+    </div>
+    <div class="progress-card glass">
+      <span class="metric-label">Syllabus coverage</span>
+      <strong>{{ snapshot.syllabus_coverage }}%</strong>
+      {{ progress_bar(snapshot.syllabus_coverage) }}
+      <p>{{ snapshot.chapters_covered }} of {{ snapshot.chapters_total }} selected chapters started</p>
+    </div>
+    <div class="progress-card glass">
+      <span class="metric-label">Learning completion</span>
+      <strong>{{ snapshot.learning_completion }}%</strong>
+      {{ progress_bar(snapshot.learning_completion) }}
+      <p>{{ snapshot.learning_minutes[0]|duration }} of {{ snapshot.learning_minutes[1]|duration }} planned learning</p>
+    </div>
+    <div class="progress-card glass">
+      <span class="metric-label">Practice completion</span>
+      <strong>{{ snapshot.practice_completion }}%</strong>
+      {{ progress_bar(snapshot.practice_completion) }}
+      <p>{{ snapshot.practice_minutes[0]|duration }} of {{ snapshot.practice_minutes[1]|duration }} planned practice</p>
+    </div>
+    <div class="progress-card glass">
+      <span class="metric-label">Revision completion</span>
+      <strong>{{ snapshot.revision_completion }}%</strong>
+      {{ progress_bar(snapshot.revision_completion) }}
+      <p>{{ snapshot.revision_minutes[0]|duration }} of {{ snapshot.revision_minutes[1]|duration }} planned revision</p>
+    </div>
+    <div class="progress-card glass">
+      <span class="metric-label">Mock tests</span>
+      <strong>{{ snapshot.mock_completion }}%</strong>
+      {{ progress_bar(snapshot.mock_completion) }}
+      <p>{{ snapshot.mock_done }} of {{ snapshot.mock_total }} mock exams completed</p>
+    </div>
+  </div>
+</section>
+
+<div class="dashboard-grid lower">
+  <section class="panel">
+    <div class="section-head">
+      <div><p class="eyebrow">Subject view</p><h2>Syllabus and stages</h2></div>
+      <span class="chip">{{ snapshot.chapters_total }} chapters</span>
+    </div>
+    {% if subject_groups %}
+    <div class="subject-summary-list">
+      {% for subject_name, subject_rows in subject_groups.items() %}
+      {% set total = subject_rows|length %}
+      {% set completed = subject_rows|selectattr('stage', 'equalto', 'Revision completed')|list|length %}
+      {% set started = subject_rows|rejectattr('stage', 'equalto', 'Not started')|list|length %}
+      <details class="subject-summary">
+        <summary>
+          <div><strong>{{ subject_name }}</strong><span>{{ started }}/{{ total }} chapters started · {{ completed }} fully revised</span></div>
+          {{ progress_bar((started / total * 100) if total else 0) }}
+        </summary>
+        <div class="chapter-mini-list">
+          {% for row in subject_rows %}
+          <a href="{{ url_for('student.chapter_detail', chapter_id=row.chapter.id) }}">
+            <span>{{ row.chapter.name }}</span>
+            <span class="chip {{ 'chip-good' if row.stage == 'Revision completed' else ('chip-warn' if row.stage in ['Practice completed','Revision due','Revision in progress'] else '') }}">{{ row.stage }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+    {% else %}
+      {{ empty_state('No chapters assigned', 'Your selected subjects do not have active chapters in the syllabus version. Contact the administrator.', url_for('student.subjects'), 'Review subjects') }}
+    {% endif %}
+  </section>
+  <aside class="panel soft-panel">
+    <div class="section-head compact-head"><div><p class="eyebrow">Stage balance</p><h2>Where work sits</h2></div></div>
+    {% if stage_counts %}
+    <div class="stage-bars">
+      {% for stage, count in stage_counts.items() %}
+      <div class="stage-line"><span>{{ stage }}</span><strong>{{ count }}</strong></div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="muted">Stage data appears after your first plan.</p>{% endif %}
+    <div class="callout">
+      <strong>Preparedness is not a checkbox.</strong>
+      <p>Use mock results and revision completion together. TT Generator will not claim you are fully prepared based only on completed tasks.</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

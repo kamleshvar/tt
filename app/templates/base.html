@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="description" content="TT Generator — a focused Class 12 study planner.">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=asset_version) }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell{% if not current_user.is_authenticated %} app-shell-public{% endif %}">
+  {% if current_user.is_authenticated %}
+  <aside class="sidebar" id="sidebar" aria-label="Student navigation">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" width="36" height="36">
+      <div><strong>TT Generator</strong><span>Class 12 planner</span></div>
+    </div>
+    <nav class="main-nav">
+      <a href="{{ url_for('student.dashboard') }}" class="{{ 'active' if request.endpoint == 'student.dashboard' }}"><span class="nav-ico">◫</span>Dashboard</a>
+      <a href="{{ url_for('student.daily_plan') }}" class="{{ 'active' if request.endpoint == 'student.daily_plan' }}"><span class="nav-ico">▤</span>Daily plan</a>
+      <a href="{{ url_for('student.weekly_plan') }}" class="{{ 'active' if request.endpoint == 'student.weekly_plan' }}"><span class="nav-ico">▦</span>Weekly plan</a>
+      <a href="{{ url_for('student.annual_plan') }}" class="{{ 'active' if request.endpoint == 'student.annual_plan' }}"><span class="nav-ico">▧</span>Annual & monthly</a>
+      <div class="nav-label">Study</div>
+      <a href="{{ url_for('student.subjects') }}" class="{{ 'active' if request.endpoint in ['student.subjects', 'student.chapter_detail'] }}"><span class="nav-ico">◈</span>Subjects & syllabus</a>
+      <a href="{{ url_for('student.workload') }}" class="{{ 'active' if request.endpoint in ['student.workload', 'student.update_chapter_workload'] }}"><span class="nav-ico">≡</span>Chapter workload</a>
+      <a href="{{ url_for('student.revision_tracker') }}" class="{{ 'active' if request.endpoint == 'student.revision_tracker' }}"><span class="nav-ico">↻</span>Revision</a>
+      <a href="{{ url_for('student.mock_tests') }}" class="{{ 'active' if request.endpoint == 'student.mock_tests' }}"><span class="nav-ico">◎</span>Mock tests</a>
+      <a href="{{ url_for('student.recovery') }}" class="{{ 'active' if request.endpoint == 'student.recovery' }}"><span class="nav-ico">↺</span>Missed work</a>
+      <div class="nav-label">Account</div>
+      <a href="{{ url_for('student.schedule_settings') }}" class="{{ 'active' if request.endpoint == 'student.schedule_settings' }}"><span class="nav-ico">⌁</span>Schedule settings</a>
+      <a href="{{ url_for('student.profile_page') }}" class="{{ 'active' if request.endpoint == 'student.profile_page' }}"><span class="nav-ico">◯</span>Profile</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="mini-user">
+        <span class="avatar">{{ current_user.full_name[:1]|upper }}</span>
+        <div><strong>{{ current_user.full_name }}</strong><span>Class 12 · {{ current_user.profile.board }}</span></div>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-quiet btn-block" type="submit">Sign out</button>
+      </form>
+    </div>
+  </aside>
+  <div class="mobile-bar">
+    <div class="brand compact">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" width="30" height="30">
+      <strong>TT Generator</strong>
+    </div>
+    <button class="menu-button" type="button" data-menu-toggle aria-controls="sidebar" aria-expanded="false">Menu</button>
+  </div>
+  <div class="sidebar-scrim" data-menu-close hidden></div>
+  {% endif %}
+  <main id="main-content" class="main {% if not current_user.is_authenticated %}main-public{% endif %}">
+    <div class="flash-stack" aria-live="polite">
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash flash-{{ category }}">
+        <span>{{ message }}</span>
+        <button type="button" class="flash-close" data-dismiss-flash aria-label="Dismiss">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% block content %}{% endblock %}
+    <footer class="site-foot">
+      <span>{{ app_name }} v{{ app_version }}</span>
+      <span>Planning aid only — not an official board result or readiness guarantee.</span>
+    </footer>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js', v=asset_version) }}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

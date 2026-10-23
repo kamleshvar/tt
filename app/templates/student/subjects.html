@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import progress_bar, empty_state %}
+{% block title %}Subjects & syllabus · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Syllabus map</p>
+    <h1>Subjects, chapters and stages</h1>
+    <p class="page-sub">Coverage is tracked chapter by chapter. A checked box is a task event, not a declaration of mastery.</p>
+  </div>
+  <span class="weeks-pill">{{ rows|length }} active chapters</span>
+</div>
+
+{% if rows %}
+<div class="subject-stack">
+  {% for subject_name, subject_rows in groups.items() %}
+  <section class="panel subject-panel">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Subject</p>
+        <h2>{{ subject_name }}</h2>
+      </div>
+      <span class="chip">{{ subject_rows|length }} chapters</span>
+    </div>
+    <div class="chapter-table">
+      <div class="chapter-table-head"><span>Chapter</span><span>Stage</span><span>Learning</span><span>Practice</span><span>Revision</span><span></span></div>
+      {% for row in subject_rows %}
+      <div class="chapter-table-row">
+        <div class="chapter-title-cell">
+          <a href="{{ url_for('student.chapter_detail', chapter_id=row.chapter.id) }}">{{ row.chapter.name }}</a>
+          <span>{{ row.chapter.unit.name }}</span>
+        </div>
+        <span class="chip stage-chip {{ 'chip-good' if row.stage == 'Revision completed' else ('chip-warn' if row.stage in ['Revision due','Revision in progress','Practice completed'] else '') }}">{{ row.stage }}</span>
+        <div class="table-meter">{{ progress_bar((row.learning_done / row.learning_total * 100) if row.learning_total else 0) }}<small>{{ row.learning_done|duration }}</small></div>
+        <div class="table-meter">{{ progress_bar((row.practice_done / row.practice_total * 100) if row.practice_total else 0) }}<small>{{ row.practice_done|duration }}</small></div>
+        <div class="table-meter">{{ progress_bar((row.revision_done / row.revision_total * 100) if row.revision_total else 0) }}<small>{{ row.revision_done|duration }}</small></div>
+        <a class="text-link" href="{{ url_for('student.chapter_detail', chapter_id=row.chapter.id) }}">Open →</a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+  {{ empty_state('No chapters yet', 'Select subjects during onboarding or ask the administrator to import a syllabus with chapters.', url_for('student.onboarding'), 'Review onboarding') }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,13 @@
+﻿{% extends "base.html" %}
+{% block title %}400 · CSRF · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="error-page">
+  <p class="error-code">400 · CSRF</p>
+  <h1>Security check failed</h1>
+  <p>Your session token was missing or expired. Go back, refresh the page and submit the form again.</p>
+  <div class="button-row">
+    <a class="btn btn-primary" href="{{ url_for('index') }}">Return to start</a>
+    <button class="btn btn-quiet" type="button" data-history-back>Go back</button>
+  </div>
+</div>
+{% endblock %}

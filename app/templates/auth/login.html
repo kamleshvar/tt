@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ app_name }}{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+{% block content %}
+<div class="auth-layout">
+  <section class="auth-story glass">
+    <div class="brand auth-brand">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" width="42" height="42">
+      <div><strong>TT Generator</strong><span>Class 12, planned with intent.</span></div>
+    </div>
+    <div class="auth-story-copy">
+      <p class="eyebrow light">Your final year, in focus</p>
+      <h1>Turn a crowded week into a calm, realistic study plan.</h1>
+      <p>School, tuition, travel, sleep and revision all share the same calendar. TT Generator finds the time that actually exists — then keeps it honest.</p>
+    </div>
+    <div class="auth-proof">
+      <div><strong>7</strong><span>days mapped</span></div>
+      <div><strong>2</strong><span>separate progress tracks</span></div>
+      <div><strong>0</strong><span>emails required</span></div>
+    </div>
+    <p class="auth-disclaimer">A planning tool for Class 12 students. No email is sent by this application.</p>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card">
+      <p class="eyebrow">Welcome back</p>
+      <h2>Sign in to your planner</h2>
+      <p class="muted">Use the email and password you registered with.</p>
+      <form method="post" class="form-stack" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field">
+          {{ form.email.label }}
+          {{ form.email(type="email", autocomplete="email", placeholder="you@example.com") }}
+          {% for error in form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="field">
+          {{ form.password.label }}
+          {{ form.password(autocomplete="current-password", placeholder="Your password") }}
+          {% for error in form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        <label class="checkline">{{ form.remember() }} <span>Keep me signed in on this device</span></label>
+        {{ form.submit(class="btn btn-primary btn-block") }}
+      </form>
+      <p class="form-foot">New here? <a href="{{ url_for('auth.register') }}">Create a Class 12 account</a></p>
+    </div>
+    <div class="auth-links">
+      <a href="{{ url_for('admin.login') }}">Administrator access</a>
+      <span>Email is only an account identifier. No verification email is sent.</span>
+    </div>
+  </section>
+</div>
+{% endblock %}

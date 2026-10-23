@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import empty_state, progress_bar %}
+{% block title %}Annual & monthly plan · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Long view</p>
+    <h1>Annual & monthly plan</h1>
+    <p class="page-sub">{% if plan %}{{ plan.horizon_start|datefmt('%d %b %Y') }} to {{ plan.horizon_end|datefmt('%d %b %Y') }} · plan v{{ plan.version_number }}{% else %}No active plan yet{% endif %}</p>
+  </div>
+  <div class="date-nav">
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.annual_plan', month=previous_month.month, year=previous_month.year) }}">← Previous month</a>
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.annual_plan', month=next_month.month, year=next_month.year) }}">Next month →</a>
+  </div>
+</div>
+
+{% if not plan %}
+  {{ empty_state('No study plan to show', 'Generate your plan from the dashboard, then this page will show the annual workload and monthly calendar.', url_for('student.dashboard'), 'Go to dashboard') }}
+{% else %}
+<div class="annual-layout">
+  <aside class="panel month-index">
+    <p class="eyebrow">Plan months</p>
+    <h2>Workload map</h2>
+    <div class="month-list">
+      {% for month in months %}
+      <a href="{{ url_for('student.annual_plan', month=month.start.month, year=month.start.year) }}" class="{{ 'active' if month.selected }}">
+        <span>{{ month.label }}</span>
+        <small>{{ month.minutes|duration }} · {{ month.completed }}/{{ month.tasks }} done</small>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="callout">
+      <strong>{{ plan.parameters.required_minutes|duration }} scheduled</strong>
+      <p>Capacity estimate at generation: {{ plan.parameters.available_minutes|duration }}. Feasibility is recalculated on regeneration.</p>
+    </div>
+  </aside>
+
+  <section class="panel calendar-panel">
+    <div class="section-head">
+      <div><p class="eyebrow">Monthly view</p><h2>{{ month_start|datefmt('%B %Y') }}</h2></div>
+      <div class="legend">
+        <span><i class="dot type-learning"></i>Learning</span>
+        <span><i class="dot type-practice"></i>Practice</span>
+        <span><i class="dot type-revision"></i>Revision</span>
+        <span><i class="dot type-mock"></i>Mock</span>
+      </div>
+    </div>
+    <div class="calendar">
+      {% for label in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<div class="calendar-weekday">{{ label }}</div>{% endfor %}
+      {% for week in weeks %}
+        {% for day in week %}
+        {% set day_tasks = tasks_by_date.get(day, []) %}
+        <div class="calendar-day {{ 'outside' if day.month != month_start.month }} {{ 'today' if day == today }}">
+          <a href="{{ url_for('student.daily_plan', date=day.isoformat()) }}" class="calendar-link">
+            <span class="calendar-number">{{ day.day }}</span>
+            {% if day_tasks %}
+            <span class="calendar-load">{{ day_tasks|sum(attribute='estimated_minutes')|duration }}</span>
+            <span class="calendar-dots">
+              {% for task_type in day_tasks|map(attribute='task_type')|unique %}<i class="dot type-{{ task_type }}"></i>{% endfor %}
+            </span>
+            <span class="calendar-count">{{ day_tasks|length }} task{{ '' if day_tasks|length == 1 else 's' }}</span>
+            {% endif %}
+          </a>
+        </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+    <div class="calendar-summary">
+      {% set month_total = tasks_by_date.values()|map('length')|sum %}
+      {% set month_done = tasks_by_date.values()|map('selectattr', 'is_complete')|map('list')|map('length')|sum %}
+      <div><span>Tasks this month</span><strong>{{ month_total }}</strong></div>
+      <div><span>Checked tasks</span><strong>{{ month_done }}</strong></div>
+      <div><span>Plan status</span><strong>{{ 'Feasible' if plan.feasible else 'At risk' }}</strong></div>
+      <a class="btn btn-small btn-quiet" href="{{ url_for('student.daily_plan', date=month_start.isoformat()) }}">Open selected month</a>
+    </div>
+  </section>
+</div>
+
+<section class="panel section-block">
+  <div class="section-head"><div><p class="eyebrow">Monthly workload</p><h2>How the year is distributed</h2></div></div>
+  <div class="month-bars">
+    {% set max_minutes = months|map(attribute='minutes')|max if months else 1 %}
+    {% for month in months %}
+    <div class="month-bar-row">
+      <span>{{ month.label }}</span>
+      <div class="month-bar"><i style="width: {{ (month.minutes / max_minutes * 100) if max_minutes else 0 }}%"></i></div>
+      <strong>{{ month.minutes|duration }}</strong>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "admin/base.html" %}
+{% block title %}Workload administration — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="admin-page-head">
+  <div>
+    <p class="eyebrow">Content quality</p>
+    <h1>Chapter workload management</h1>
+    <p>Review inferred stage hours, confidence, research sources and version-to-version workload changes. Every manual edit needs a reason and is audit-logged.</p>
+  </div>
+  <span class="chip">{{ version.version_label if version else 'No version' }}</span>
+</div>
+
+<div class="banner banner-info">
+  <div>
+    <strong>CBSE does not publish chapter-wise study hours</strong>
+    <p>These values are planning estimates. “Validated” covers the chapter catalogue and source links, not an official time allocation. Low-confidence chapters should be reviewed by a teacher and adjusted for the school's actual teaching pace.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <form method="get" class="filter-grid admin-workload-filters">
+    <label>Version
+      <select name="version">
+        {% for item in versions %}
+        <option value="{{ item.id }}" {{ 'selected' if version and item.id == version.id }}>{{ item.board }} {{ item.academic_year }} · {{ item.version_label }} · {{ item.status }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Compare with
+      <select name="compare">
+        <option value="">No comparison</option>
+        {% for item in versions if not version or item.id != version.id %}
+        <option value="{{ item.id }}" {{ 'selected' if compare_version and item.id == compare_version.id }}>{{ item.version_label }} · {{ item.status }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Subject
+      <select name="subject">
+        <option value="">All subjects</option>
+        {% for subject in subject_choices %}
+        <option value="{{ subject.id }}" {{ 'selected' if filters.subject == subject.id }}>{{ subject.name }} ({{ subject.code }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Confidence
+      <select name="confidence">
+        <option value="">Any confidence</option>
+        <option value="low" {{ 'selected' if filters.confidence == 'low' }}>Low</option>
+        <option value="medium" {{ 'selected' if filters.confidence == 'medium' }}>Medium</option>
+        <option value="high" {{ 'selected' if filters.confidence == 'high' }}>High</option>
+      </select>
+    </label>
+    <label>Difficulty
+      <select name="difficulty">
+        <option value="">Any difficulty</option>
+        <option value="easy" {{ 'selected' if filters.difficulty == 'easy' }}>Easy</option>
+        <option value="medium" {{ 'selected' if filters.difficulty == 'medium' }}>Medium</option>
+        <option value="hard" {{ 'selected' if filters.difficulty == 'hard' }}>Hard</option>
+      </select>
+    </label>
+    <label>Research status
+      <select name="research">
+        <option value="">Any status</option>
+        <option value="inferred" {{ 'selected' if filters.research == 'inferred' }}>Inferred</option>
+        <option value="admin_reviewed" {{ 'selected' if filters.research == 'admin_reviewed' }}>Admin reviewed</option>
+        <option value="unverified" {{ 'selected' if filters.research == 'unverified' }}>Unverified</option>
+      </select>
+    </label>
+    <label>Search <input type="search" name="q" value="{{ filters.q }}" placeholder="Chapter or subject"></label>
+    <div class="filter-actions">
+      <button class="btn btn-small" type="submit">Apply</button>
+      <a class="btn btn-small btn-quiet" href="{{ url_for('admin.workload_admin') }}">Reset</a>
+    </div>
+  </form>
+</section>
+
+{% if version %}
+<div class="metric-grid compact admin-metrics">
+  <div class="metric-card glass"><span class="metric-label">Active chapters</span><strong class="metric-value">{{ current_summary.chapters }}</strong><span class="metric-note">{{ current_summary.subjects|length }} subjects</span></div>
+  <div class="metric-card glass"><span class="metric-label">Default workload</span><strong class="metric-value">{{ current_summary.total_minutes|duration }}</strong><span class="metric-note">{{ current_summary.learning_minutes|duration }} learning</span></div>
+  <div class="metric-card glass"><span class="metric-label">Practice + revision</span><strong class="metric-value">{{ (current_summary.practice_minutes + current_summary.revision_minutes)|duration }}</strong><span class="metric-note">{{ current_summary.practice_minutes|duration }} practice · {{ current_summary.revision_minutes|duration }} revision</span></div>
+  <div class="metric-card glass"><span class="metric-label">Low confidence</span><strong class="metric-value">{{ low_confidence }}</strong><span class="metric-note">chapters needing teacher review</span></div>
+</div>
+
+<section class="panel">
+  <div class="section-head"><div><p class="eyebrow">Version metadata</p><h2>{{ version.board }} {{ version.academic_year }} · {{ version.version_label }}</h2></div><span class="chip {{ 'chip-good' if version.status == 'validated' else 'chip-warn' }}">{{ version.status_label }}</span></div>
+  <div class="summary-lines summary-lines-wide">
+    <div><span>Research status</span><strong>{{ version.research_status|replace('_', ' ') }}</strong></div>
+    <div><span>Last researched</span><strong>{{ version.last_researched_at|datefmt('%d %b %Y') if version.last_researched_at else 'Not recorded' }}</strong></div>
+    <div><span>Source file</span><strong>{{ version.source_file or 'Bundled dataset' }}</strong></div>
+    <div><span>Checksum</span><strong>{{ version.checksum[:12] if version.checksum else '—' }}</strong></div>
+  </div>
+  {% if version.research_sources %}
+  <details class="inline-details"><summary>Version research sources</summary><ul class="plain-list">{% for source in version.research_sources %}<li><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a><span>{{ source.source_type|replace('_', ' ') }}</span></li>{% endfor %}</ul></details>
+  {% endif %}
+  {% if version.notes %}<p class="fine-print">{{ version.notes }}</p>{% endif %}
+</section>
+
+{% if compare_version %}
+<section class="panel">
+  <div class="section-head"><div><p class="eyebrow">Comparison</p><h2>{{ version.version_label }} vs {{ compare_version.version_label }}</h2></div><span class="chip">{{ comparison|length }} subjects</span></div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Current</th><th>Compare</th><th>Difference</th></tr></thead>
+      <tbody>
+        {% for row in comparison %}
+        <tr>
+          <td><strong>{{ row.name }}</strong><span class="fine-print">Code {{ row.code }}</span></td>
+          <td>{{ row.current_minutes|duration }}</td>
+          <td>{{ row.compare_minutes|duration }}</td>
+          <td class="{{ 'text-danger' if row.delta_minutes > 0 else ('text-positive' if row.delta_minutes < 0 else '') }}">{{ '%+d'|format((row.delta_minutes / 60)|round|int) }} h</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot><tr><th>Total</th><th>{{ current_summary.total_minutes|duration }}</th><th>{{ compare_summary.total_minutes|duration }}</th><th>{{ '%+d'|format(((current_summary.total_minutes - compare_summary.total_minutes) / 60)|round|int) }} h</th></tr></tfoot>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="section-head"><div><p class="eyebrow">Chapter estimates</p><h2>{{ chapters|length }} shown · {{ filtered_totals.total|duration }}</h2></div><span class="chip">{{ filtered_totals.learning|duration }} L · {{ filtered_totals.practice|duration }} P · {{ filtered_totals.revision|duration }} R</span></div>
+  {% if chapters %}
+  <div class="admin-workload-list">
+    {% for chapter in chapters %}
+    <details class="admin-workload-item">
+      <summary>
+        <div class="chapter-title-cell"><strong>{{ chapter.name }}</strong><span>{{ chapter.subject.name }} · {{ chapter.unit.name }}</span></div>
+        <div class="admin-workload-summary">
+          <span><b>L</b> {{ chapter.learning_hours }}h</span>
+          <span><b>P</b> {{ chapter.practice_hours }}h</span>
+          <span><b>R</b> {{ chapter.revision_hours }}h</span>
+          <strong>{{ chapter.total_hours }}h</strong>
+          <span class="chip {{ 'chip-warn' if chapter.estimate_confidence == 'low' else '' }}">{{ chapter.estimate_confidence|capitalize }}</span>
+          <span class="chip">{{ chapter.difficulty|capitalize }}</span>
+        </div>
+      </summary>
+      <div class="admin-workload-body">
+        <div class="workload-source-block">
+          <p class="fine-print"><strong>Method:</strong> {{ (chapter.estimate_method or 'not recorded')|replace('_', ' ') }} · <strong>Research:</strong> {{ (chapter.research_status or 'unverified')|replace('_', ' ') }}{% if chapter.last_researched_at %} · {{ chapter.last_researched_at|datefmt('%d %b %Y') }}{% endif %}</p>
+          {% if chapter.research_notes %}<p class="fine-print">{{ chapter.research_notes }}</p>{% endif %}
+          {% if chapter.estimate_review_note %}<p class="fine-print"><strong>Last review:</strong> {{ chapter.estimate_review_note }}{% if chapter.estimate_updated_at %} · {{ chapter.estimate_updated_at|datefmt('%d %b %Y %H:%M') }}{% endif %}</p>{% endif %}
+          {% if chapter.research_sources %}
+          <ul class="plain-list">
+            {% for source in chapter.research_sources %}
+            <li><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a><span>{{ source.source_type|replace('_', ' ') }} · accessed {{ source.accessed }}</span></li>
+            {% endfor %}
+          </ul>
+          {% else %}<p class="fine-print">No source links recorded for this chapter.</p>{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('admin.update_chapter_estimate', chapter_id=chapter.id) }}" class="admin-workload-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Learning hours <input type="number" name="learning_hours" min="0" max="200" step="0.5" value="{{ chapter.learning_hours }}" required></label>
+          <label>Practice hours <input type="number" name="practice_hours" min="0" max="200" step="0.5" value="{{ chapter.practice_hours }}" required></label>
+          <label>Revision hours <input type="number" name="revision_hours" min="0" max="200" step="0.5" value="{{ chapter.revision_hours }}" required></label>
+          <label>Confidence
+            <select name="estimate_confidence">
+              {% for value in ['low','medium','high'] %}<option value="{{ value }}" {{ 'selected' if chapter.estimate_confidence == value }}>{{ value|capitalize }}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Difficulty
+            <select name="difficulty">
+              {% for value in ['easy','medium','hard'] %}<option value="{{ value }}" {{ 'selected' if chapter.difficulty == value }}>{{ value|capitalize }}</option>{% endfor %}
+            </select>
+          </label>
+          <label class="admin-workload-reason">Review reason <textarea name="review_note" rows="2" maxlength="1000" required placeholder="Why is this estimate changing?"></textarea></label>
+          <button class="btn btn-small" type="submit">Save estimate</button>
+        </form>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">No chapters match these filters.</p>
+  {% endif %}
+</section>
+{% else %}
+<p class="muted">No syllabus versions are available. Import one from Syllabus administration first.</p>
+{% endif %}
+{% endblock %}

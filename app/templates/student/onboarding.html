@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Set up your planner · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head onboarding-head">
+  <div>
+    <p class="eyebrow">Guided setup · Step {{ step }} of 4</p>
+    <h1>Build a timetable around your real week</h1>
+    <p class="page-sub">Progress is saved at each step. You can come back later and continue where you left off.</p>
+  </div>
+  <div class="weeks-pill">Class 12 only</div>
+</div>
+
+<div class="wizard">
+  <nav class="wizard-steps" aria-label="Onboarding steps">
+    {% for number, label in [(1,'Academics'),(2,'Subjects'),(3,'Weekly schedule'),(4,'Study style')] %}
+    <div class="wizard-step {{ 'active' if step == number }} {{ 'done' if step > number }}">
+      <span>{{ number }}</span><strong>{{ label }}</strong>
+    </div>
+    {% endfor %}
+  </nav>
+
+  <div class="panel wizard-panel">
+    {% if step == 1 %}
+    <form method="post" action="{{ url_for('student.onboarding', step=1) }}" class="form-stack" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="section-head">
+        <div><p class="eyebrow">Academic target</p><h2>What are you working toward?</h2></div>
+        <span class="chip">Class 12</span>
+      </div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="board">Board</label>
+          <select id="board" name="board" required>
+            {% for value, label in [('CBSE','CBSE'),('CISCE','CISCE / ISC'),('State Board','State Board'),('Other','Other')] %}
+            <option value="{{ value }}" {{ 'selected' if (request.form.get('board') or profile.board) == value }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="academic_year">Academic year</label>
+          <input id="academic_year" name="academic_year" type="text" required pattern="\d{4}-\d{2}" value="{{ request.form.get('academic_year') or profile.academic_year }}" placeholder="2026-27">
+          <span class="hint">Format: 2026-27</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="exam_date">Board examination date <span class="muted">(optional if not announced)</span></label>
+        <input id="exam_date" name="exam_date" type="date" value="{{ request.form.get('exam_date') or (profile.exam_date.isoformat() if profile.exam_date else '') }}" min="{{ today.isoformat() }}">
+        <span class="hint">If known, the planner uses the real deadline and warns when the workload cannot fit. Leave blank if the board has not announced it.</span>
+      </div>
+      <div class="alert alert-info">
+        TT Generator supports Class 12 accounts only. Registration cannot create a Class 10 account.
+      </div>
+      <div class="wizard-actions">
+        <a class="btn btn-quiet" href="{{ url_for('student.dashboard') if profile.onboarding_completed else url_for('auth.login') }}">Save and leave</a>
+        <button class="btn btn-primary" type="submit" name="action" value="next">Save and continue</button>
+      </div>
+    </form>
+
+    {% elif step == 2 %}
+    <form method="post" action="{{ url_for('student.onboarding', step=2) }}" class="form-stack" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="section-head">
+        <div><p class="eyebrow">Subject map</p><h2>Choose your subjects</h2></div>
+        {% if version %}<span class="chip {{ 'chip-warn' if version.status != 'validated' }}">{{ version.status_label }}</span>{% endif %}
+      </div>
+      {% if not version %}
+      <div class="alert alert-warning">
+        No syllabus is configured for {{ profile.board }} {{ profile.academic_year }}. Ask the administrator to import and validate the correct syllabus, then continue. Your other setup progress is safe.
+      </div>
+      {% else %}
+      <div class="alert alert-warning">
+        <strong>Syllabus status:</strong> {{ version.notes or 'Verify this dataset before relying on it.' }}
+      </div>
+      <div class="subject-picker">
+        {% for subject in version.subjects if not subject.is_removed %}
+        {% set link = links.get(subject.id) %}
+        {% set posted = request.form.getlist('subjects') %}
+        <div class="subject-choice">
+          <label class="checkline strong">
+            <input type="checkbox" name="subjects" value="{{ subject.id }}" {{ 'checked' if ((posted and subject.id|string in posted) or (not posted and link)) }}>
+            <span>{{ subject.name }}</span>
+          </label>
+          <div class="subject-confidence">
+            <label for="confidence-{{ subject.id }}">Confidence</label>
+            <select id="confidence-{{ subject.id }}" name="confidence_{{ subject.id }}">
+              {% set current_conf = request.form.get('confidence_' ~ subject.id) or (link.confidence if link else 3)|string %}
+              {% for value, label in [('1','1 · Struggling'),('2','2 · Shaky'),('3','3 · Average'),('4','4 · Confident'),('5','5 · Strong')] %}
+              <option value="{{ value }}" {{ 'selected' if current_conf == value }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <input type="text" name="performance_{{ subject.id }}" maxlength="40" placeholder="Recent performance (optional)" value="{{ request.form.get('performance_' ~ subject.id) or (link.recent_performance if link else '') }}">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="hint">Confidence affects planning priority, not your grade. Lower-confidence subjects receive more learning and revision time.</p>
+      {% endif %}
+      <div class="wizard-actions">
+        <button class="btn btn-quiet" type="submit" name="action" value="back">Back</button>
+        {% if version %}<button class="btn btn-primary" type="submit" name="action" value="next">Save and continue</button>{% endif %}
+      </div>
+    </form>
+
+    {% elif step == 3 %}
+    <form method="post" action="{{ url_for('student.onboarding', step=3) }}" class="form-stack" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="section-head">
+        <div><p class="eyebrow">Fixed time</p><h2>Your normal week</h2></div>
+        <span class="chip">All seven days</span>
+      </div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="wake_time">Wake time</label>
+          <input id="wake_time" name="wake_time" type="time" required value="{{ request.form.get('wake_time') or current_user.preferences.wake_time.strftime('%H:%M') }}">
+        </div>
+        <div class="field">
+          <label for="sleep_time">Sleep time</label>
+          <input id="sleep_time" name="sleep_time" type="time" required value="{{ request.form.get('sleep_time') or current_user.preferences.sleep_time.strftime('%H:%M') }}">
+        </div>
+      </div>
+      <div class="form-grid four">
+        <div class="field"><label for="school_travel_before">School travel before</label><input id="school_travel_before" name="school_travel_before" type="number" min="0" max="180" value="{{ request.form.get('school_travel_before') or sample_travel_before }}"><span class="hint">minutes</span></div>
+        <div class="field"><label for="school_travel_after">School travel after</label><input id="school_travel_after" name="school_travel_after" type="number" min="0" max="180" value="{{ request.form.get('school_travel_after') or sample_travel_after }}"><span class="hint">minutes</span></div>
+        <div class="field"><label for="tuition_travel_before">Tuition travel before</label><input id="tuition_travel_before" name="tuition_travel_before" type="number" min="0" max="180" value="{{ request.form.get('tuition_travel_before') or 30 }}"><span class="hint">minutes</span></div>
+        <div class="field"><label for="tuition_travel_after">Tuition travel after</label><input id="tuition_travel_after" name="tuition_travel_after" type="number" min="0" max="180" value="{{ request.form.get('tuition_travel_after') or 15 }}"><span class="hint">minutes</span></div>
+      </div>
+      <div class="table-wrap">
+        <table class="schedule-table">
+          <thead><tr><th>Day</th><th>School start</th><th>School end</th><th>Tuition start</th><th>Tuition end</th></tr></thead>
+          <tbody>
+            {% for day in range(7) %}
+            {% set school_item = school.get(day) %}
+            {% set tuition_item = tuition.get(day) %}
+            <tr>
+              <th>{{ days[day] }}</th>
+              <td><input aria-label="{{ days[day] }} school start" type="time" name="school_start_{{ day }}" value="{{ request.form.get('school_start_' ~ day) or (school_item.start_time.strftime('%H:%M') if school_item else '') }}"></td>
+              <td><input aria-label="{{ days[day] }} school end" type="time" name="school_end_{{ day }}" value="{{ request.form.get('school_end_' ~ day) or (school_item.end_time.strftime('%H:%M') if school_item else '') }}"></td>
+              <td><input aria-label="{{ days[day] }} tuition start" type="time" name="tuition_start_{{ day }}" value="{{ request.form.get('tuition_start_' ~ day) or (tuition_item.start_time.strftime('%H:%M') if tuition_item else '') }}"></td>
+              <td><input aria-label="{{ days[day] }} tuition end" type="time" name="tuition_end_{{ day }}" value="{{ request.form.get('tuition_end_' ~ day) or (tuition_item.end_time.strftime('%H:%M') if tuition_item else '') }}"></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="hint">Leave both start and end blank on days without school or tuition. Travel buffers are blocked out automatically.</p>
+      <details class="panel inset" {{ 'open' if others }}>
+        <summary><strong>Other fixed commitments</strong><span class="muted">Optional</span></summary>
+        {% if others %}
+        <ul class="plain-list">
+          {% for item in others %}
+          <li><span>{{ days[item.day_of_week] }} · {{ item.title }}</span><span>{{ item.start_time.strftime('%H:%M') }}–{{ item.end_time.strftime('%H:%M') }}</span></li>
+          {% endfor %}
+        </ul>
+        <p class="hint">Existing commitments are preserved. Manage additional entries later in Schedule settings.</p>
+        {% endif %}
+        <div class="form-grid five">
+          <div class="field"><label for="other_title">Title</label><input id="other_title" name="other_title" maxlength="120" placeholder="Coaching test, family duty…"></div>
+          <div class="field"><label for="other_day">Day</label><select id="other_day" name="other_day">{% for day in range(7) %}<option value="{{ day }}">{{ days[day] }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="other_start">Start</label><input id="other_start" name="other_start" type="time"></div>
+          <div class="field"><label for="other_end">End</label><input id="other_end" name="other_end" type="time"></div>
+        </div>
+      </details>
+      <div class="wizard-actions">
+        <button class="btn btn-quiet" type="submit" name="action" value="back">Back</button>
+        <button class="btn btn-primary" type="submit" name="action" value="next">Save and continue</button>
+      </div>
+    </form>
+
+    {% elif step == 4 %}
+    <form method="post" action="{{ url_for('student.onboarding', step=4) }}" class="form-stack" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="section-head">
+        <div><p class="eyebrow">Study style</p><h2>How do you study best?</h2></div>
+        <span class="chip">Final step</span>
+      </div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="preferred_study_start">Preferred study period starts</label>
+          <input id="preferred_study_start" name="preferred_study_start" type="time" required value="{{ request.form.get('preferred_study_start') or preferences.preferred_study_start.strftime('%H:%M') }}">
+        </div>
+        <div class="field">
+          <label for="preferred_study_end">Preferred study period ends</label>
+          <input id="preferred_study_end" name="preferred_study_end" type="time" required value="{{ request.form.get('preferred_study_end') or preferences.preferred_study_end.strftime('%H:%M') }}">
+        </div>
+      </div>
+      <div class="form-grid three">
+        <div class="field"><label for="session_duration_minutes">Session length</label><input id="session_duration_minutes" name="session_duration_minutes" type="number" min="20" max="120" step="5" required value="{{ request.form.get('session_duration_minutes') or preferences.session_duration_minutes }}"><span class="hint">minutes</span></div>
+        <div class="field"><label for="break_duration_minutes">Break length</label><input id="break_duration_minutes" name="break_duration_minutes" type="number" min="5" max="60" required value="{{ request.form.get('break_duration_minutes') or preferences.break_duration_minutes }}"><span class="hint">minutes</span></div>
+        <div class="field"><label for="break_frequency_sessions">Break after</label><input id="break_frequency_sessions" name="break_frequency_sessions" type="number" min="1" max="5" required value="{{ request.form.get('break_frequency_sessions') or preferences.break_frequency_sessions }}"><span class="hint">sessions</span></div>
+      </div>
+      <div class="form-grid two">
+        <div class="field"><label for="daily_cap_minutes">Maximum planned study per day</label><input id="daily_cap_minutes" name="daily_cap_minutes" type="number" min="30" max="600" required value="{{ request.form.get('daily_cap_minutes') or preferences.daily_cap_minutes }}"><span class="hint">minutes. The planner will not exceed this.</span></div>
+        <div class="field"><label for="revision_frequency">Revision cycles per chapter</label><select id="revision_frequency" name="revision_frequency">{% set rev_current = request.form.get('revision_frequency') or preferences.revision_frequency|string %}{% for choice in [1,2,3] %}<option value="{{ choice }}" {{ 'selected' if rev_current == choice|string }}>{{ choice }} cycle{{ 's' if choice > 1 }}</option>{% endfor %}</select></div>
+      </div>
+      <fieldset class="field">
+        <legend>Lighter / shorter-commitment days</legend>
+        <p class="hint">These days receive a reduced study cap, leaving room for rest and catch-up.</p>
+        <div class="day-check-grid">
+          {% set posted_lighter = request.form.getlist('lighter_days') %}
+          {% for day in range(7) %}
+          <label class="checkline compact"><input type="checkbox" name="lighter_days" value="{{ day }}" {{ 'checked' if ((posted_lighter and day|string in posted_lighter) or (not posted_lighter and day in (preferences.lighter_days or []))) }}> {{ days[day] }}</label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <div class="field">
+        <label for="struggle_notes">Anything the planner should know? <span class="muted">(optional)</span></label>
+        <textarea id="struggle_notes" name="struggle_notes" rows="3" maxlength="2000" placeholder="For example: I lose focus after 40 minutes in Mathematics, or Tuesday evenings are unreliable.">{{ request.form.get('struggle_notes') or preferences.struggle_notes or '' }}</textarea>
+      </div>
+      <div class="alert alert-info">
+        Completing setup generates a first plan. Nothing is guaranteed by checking boxes: learning, practice, revision and mock-test progress are tracked separately.
+      </div>
+      <div class="wizard-actions">
+        <button class="btn btn-quiet" type="submit" name="action" value="back">Back</button>
+        <button class="btn btn-primary" type="submit" name="action" value="next">Finish and build my plan</button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import progress_bar, task_row, empty_state %}
+{% block title %}{{ row.chapter.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ row.subject.name }} · {{ row.chapter.unit.name }}</p>
+    <h1>{{ row.chapter.name }}</h1>
+    <p class="page-sub">Stage: <strong>{{ row.stage }}</strong>. {{ workload.personalized.total|duration }} personalized workload across learning, practice and revision.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.subjects') }}">← All subjects</a>
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.revision_tracker') }}">Revision tracker</a>
+  </div>
+</div>
+
+<div class="metric-grid compact">
+  <div class="metric-card glass"><span class="metric-label">Learning</span><strong class="metric-value">{{ row.learning_done|duration }}</strong><span class="metric-note">of {{ row.learning_total|duration }} planned</span>{{ progress_bar((row.learning_done / row.learning_total * 100) if row.learning_total else 0) }}</div>
+  <div class="metric-card glass"><span class="metric-label">Practice</span><strong class="metric-value">{{ row.practice_done|duration }}</strong><span class="metric-note">of {{ row.practice_total|duration }} planned</span>{{ progress_bar((row.practice_done / row.practice_total * 100) if row.practice_total else 0) }}</div>
+  <div class="metric-card glass"><span class="metric-label">Revision</span><strong class="metric-value">{{ row.revision_done|duration }}</strong><span class="metric-note">of {{ row.revision_total|duration }} planned</span>{{ progress_bar((row.revision_done / row.revision_total * 100) if row.revision_total else 0) }}</div>
+  <div class="metric-card glass"><span class="metric-label">Next open task</span>{% if row.next_task %}<strong class="metric-value small">{{ row.next_task.scheduled_date|datefmt('%d %b') }}</strong><span class="metric-note">{{ row.next_task.title }}</span>{% else %}<strong class="metric-value small">None</strong><span class="metric-note">No pending task for this chapter</span>{% endif %}</div>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head">
+      <div><p class="eyebrow">Task history</p><h2>Scheduled work</h2></div>
+      <span class="chip">{{ tasks|length }} tasks</span>
+    </div>
+    {% if tasks %}
+    <div class="task-list">{% for task in tasks %}{{ task_row(task) }}{% endfor %}</div>
+    {% else %}
+      {{ empty_state('No tasks yet for this chapter', 'Tasks appear after plan generation. If this chapter should be included, check that its subject was selected and regenerate.', url_for('student.dashboard'), 'Go to dashboard') }}
+    {% endif %}
+  </section>
+  <aside class="dashboard-side">
+    <section class="panel">
+      <p class="eyebrow">Revision records</p>
+      <h2>Cycles</h2>
+      {% if revisions %}
+      <ul class="timeline-list">
+        {% for record in revisions %}
+        <li><span class="timeline-date">R{{ record.revision_number }}</span><div><strong>{{ record.status|capitalize }}</strong><span>{{ record.scheduled_date|datefmt('%d %b') }}{% if record.completed_date %} · completed {{ record.completed_date|datefmt('%d %b') }}{% endif %}</span></div></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">No revision cycle has been scheduled for this chapter yet.</p>{% endif %}
+    </section>
+    <section class="panel">
+      <p class="eyebrow">Workload estimate</p>
+      <h2>Learning, practice, revision</h2>
+      <div class="summary-lines">
+        <div><span>Learning</span><strong>{{ workload.personalized.learning|duration }}</strong></div>
+        <div><span>Practice</span><strong>{{ workload.personalized.practice|duration }}</strong></div>
+        <div><span>Revision</span><strong>{{ workload.personalized.revision|duration }}</strong></div>
+        <div><span>Estimate confidence</span><strong>{{ workload.confidence_label }}</strong></div>
+      </div>
+      <p class="fine-print">Default estimate: {{ workload.base_total|duration }}. Difficulty: {{ row.chapter.difficulty|capitalize }}. Method: {{ (row.chapter.estimate_method or 'inferred')|replace('_', ' ') }}.</p>
+      {% if row.chapter.research_notes %}<p class="fine-print">{{ row.chapter.research_notes }}</p>{% endif %}
+      {% if row.chapter.research_sources %}
+      <details class="inline-details"><summary>Research sources</summary><ul class="plain-list">{% for source in row.chapter.research_sources %}<li><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a><span>{{ source.source_type|replace('_', ' ') }}</span></li>{% endfor %}</ul></details>
+      {% endif %}
+      <form method="post" action="{{ url_for('student.update_chapter_workload', chapter_id=row.chapter.id) }}" class="form-stack tight">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <div class="field"><label for="confidence">Your confidence</label><select id="confidence" name="confidence"><option value="">Subject default</option>{% for value in [1,2,3,4,5] %}<option value="{{ value }}" {{ 'selected' if workload.override and workload.override.confidence == value }}>{{ value }} ? {{ {1:'very low',2:'low',3:'moderate',4:'high',5:'very high'}[value] }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="study_mode">Study mode</label><select id="study_mode" name="study_mode"><option value="first_time" {{ 'selected' if workload.personalized.study_mode != 'revision_only' }}>First time</option><option value="revision_only" {{ 'selected' if workload.personalized.study_mode == 'revision_only' }}>Revision only</option></select></div>
+        <button class="btn btn-small" type="submit">Save workload preference</button>
+      </form>
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Topics in syllabus</p>
+      {% if row.chapter.topics %}
+      <ul class="plain-list">
+        {% for topic in row.chapter.topics if not topic.is_removed %}<li><span>{{ topic.name }}</span>{% if topic.estimated_minutes %}<span>{{ topic.estimated_minutes|duration }}</span>{% endif %}</li>{% endfor %}
+      </ul>
+      {% else %}<p class="muted">This chapter is planned at chapter level; no topic breakdown is present in the dataset.</p>{% endif %}
+    </section>
+    <div class="callout"><strong>Readiness boundary</strong><p>Completing all tasks here does not automatically mark you prepared. Practice and revision remain separate stages.</p></div>
+  </aside>
+</div>
+{% endblock %}

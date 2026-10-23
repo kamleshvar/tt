@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Profile · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Account</p>
+    <h1>Your profile</h1>
+    <p class="page-sub">The essentials used by your Class 12 planner. Email remains a unique sign-in identifier only.</p>
+  </div>
+  <a class="btn btn-small btn-quiet" href="{{ url_for('auth.change_password') }}">Change password</a>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Identity</p><h2>Account details</h2></div><span class="chip">Class 12</span></div>
+    <div class="profile-summary">
+      <span class="avatar large">{{ current_user.full_name[:1]|upper }}</span>
+      <div><strong>{{ current_user.full_name }}</strong><span>{{ current_user.email }}</span><span>Joined {{ current_user.created_at|datefmt('%d %b %Y') }}</span></div>
+    </div>
+    <form method="post" class="form-stack section-block" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">{{ form.full_name.label }}{{ form.full_name() }}{% for error in form.full_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+      <div class="form-grid two">
+        <div class="field"><label>Email</label><div class="read-only-field">{{ current_user.email }} <span>Sign-in ID</span></div></div>
+        <div class="field"><label>Class</label><div class="read-only-field">Class 12 <span>Fixed</span></div></div>
+        <div class="field"><label>Board</label><div class="read-only-field">{{ profile.board }} <span>Current</span></div></div>
+        <div class="field"><label>Academic year</label><div class="read-only-field">{{ profile.academic_year }} <span>Current</span></div></div>
+      </div>
+      <div class="field">
+        <label for="exam_date">Board examination date</label>
+        <input id="exam_date" name="exam_date" type="date" min="{{ today.isoformat() }}" value="{{ profile.exam_date.isoformat() if profile.exam_date else '' }}">
+        <span class="hint">Changing the deadline affects future regeneration and feasibility warnings.</span>
+      </div>
+      <button class="btn btn-primary" type="submit">Save profile</button>
+    </form>
+  </section>
+  <aside class="dashboard-side">
+    <section class="panel">
+      <p class="eyebrow">Security</p><h2>How your account works</h2>
+      <ul class="plain-list">
+        <li><span>Password storage</span><strong>Scrypt hash</strong></li>
+        <li><span>CSRF protection</span><strong>Enabled</strong></li>
+        <li><span>Email delivery</span><strong>Not used</strong></li>
+        <li><span>Account status</span><strong>{{ 'Active' if current_user.is_active else 'Deactivated' }}</strong></li>
+      </ul>
+      <p class="fine-print">There is no email verification or password-reset email. If you lose your password, ask the administrator to reset it securely.</p>
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Last sign-in</p>
+      <h3>{{ current_user.last_login_at|datefmt('%d %b %Y, %H:%M') if current_user.last_login_at else 'Not recorded' }}</h3>
+      <p>Signing out invalidates this session. Administrators can also deactivate an account, which immediately ends access.</p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

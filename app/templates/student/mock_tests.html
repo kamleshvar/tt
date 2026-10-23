@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import empty_state, progress_bar %}
+{% block title %}Mock tests · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Practice under pressure</p>
+    <h1>Mock tests</h1>
+    <p class="page-sub">The planner reserves full-syllabus mock sessions. Record scores and reflections separately from task completion.</p>
+  </div>
+  <span class="weeks-pill">{{ completed|length }}/{{ tests|length }} completed</span>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Upcoming</p><h2>Pending mock tests</h2></div><span class="chip">{{ pending|length }}</span></div>
+    {% if pending %}
+    <div class="mock-list">
+      {% for test in pending %}
+      <article class="mock-card">
+        <div class="mock-date"><strong>{{ test.scheduled_date|datefmt('%d') }}</strong><span>{{ test.scheduled_date|datefmt('%b') }}</span></div>
+        <div class="mock-body">
+          <h3>{{ test.title }}</h3>
+          <p>{{ test.duration_minutes|duration }}{% if test.syllabus_subject %} · {{ test.syllabus_subject.name }}{% else %} · all subjects{% endif %}{% if test.task_id %} · linked to planner task{% endif %}</p>
+          <details class="result-details">
+            <summary class="btn btn-small btn-quiet">Record result</summary>
+            <form method="post" action="{{ url_for('student.mock_test_result', mock_id=test.id) }}" class="form-stack tight">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="form-grid two">
+                <div class="field"><label for="score-{{ test.id }}">Score</label><input id="score-{{ test.id }}" type="number" name="score" min="0"></div>
+                <div class="field"><label for="max-{{ test.id }}">Maximum</label><input id="max-{{ test.id }}" type="number" name="max_score" min="1"></div>
+              </div>
+              <div class="field"><label for="notes-{{ test.id }}">Reflection</label><textarea id="notes-{{ test.id }}" name="notes" rows="2" maxlength="1000" placeholder="What needs another revision?"></textarea></div>
+              <button class="btn btn-small btn-primary" type="submit">Save result & mark complete</button>
+            </form>
+          </details>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="muted">No pending mock tests. Generated plans place mocks near the board deadline when space allows.</p>
+    {% endif %}
+  </section>
+
+  <aside class="dashboard-side">
+    <section class="panel">
+      <p class="eyebrow">New test</p><h2>Add a mock or school test</h2>
+      <form method="post" class="form-stack tight" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field">{{ form.title.label }}{{ form.title(placeholder="Physics full syllabus mock") }}{% for error in form.title.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+        <div class="form-grid two">
+          <div class="field">{{ form.scheduled_date.label }}{{ form.scheduled_date(min=today.isoformat()) }}{% for error in form.scheduled_date.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+          <div class="field">{{ form.duration_minutes.label }}{{ form.duration_minutes(value=form.duration_minutes.data or 120) }}{% for error in form.duration_minutes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+        </div>
+        <div class="field">{{ form.subject_id.label }}{{ form.subject_id() }}{% for error in form.subject_id.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+        <div class="field">{{ form.notes.label }}{{ form.notes(rows=2) }}</div>
+        {{ form.submit(class="btn btn-primary btn-block") }}
+      </form>
+    </section>
+    <section class="panel soft-panel">
+      <div class="summary-lines">
+        <div><span>Completion</span><strong>{{ ((completed|length / tests|length * 100) if tests else 0)|round|int }}%</strong></div>
+        <div><span>Recorded scores</span><strong>{{ completed|selectattr('score')|list|length }}</strong></div>
+      </div>
+      {{ progress_bar((completed|length / tests|length * 100) if tests else 0) }}
+      <p class="fine-print">A high score on one mock is not a guarantee across the whole syllabus. Review weak chapters and keep revision cycles intact.</p>
+    </section>
+  </aside>
+</div>
+
+<section class="panel section-block">
+  <div class="section-head"><div><p class="eyebrow">History</p><h2>Completed mocks</h2></div><span class="chip">{{ completed|length }}</span></div>
+  {% if completed %}
+  <div class="result-table">
+    <div class="result-table-head"><span>Test</span><span>Date</span><span>Score</span><span>Notes</span></div>
+    {% for test in completed %}
+    <div class="result-table-row">
+      <strong>{{ test.title }}</strong>
+      <span>{{ test.scheduled_date|datefmt('%d %b %Y') }}</span>
+      <span>{% if test.score is not none %}{{ test.score }} / {{ test.max_score or '—' }}{% else %}Completed{% endif %}</span>
+      <span class="muted">{{ test.notes or '—' }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    {{ empty_state('No completed mocks', 'When you finish a mock, record the result so practice and test progress stay distinct.', None, None) }}
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Schedule settings · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Availability</p>
+    <h1>Schedule settings</h1>
+    <p class="page-sub">Changes affect future plan generation. Regenerate from the dashboard to apply a new routine. Completed work is preserved.</p>
+  </div>
+  <a class="btn btn-small btn-quiet" href="{{ url_for('student.daily_plan') }}">View today →</a>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Study rhythm</p><h2>Time and session preferences</h2></div></div>
+    <form method="post" class="form-stack" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="form-grid two">
+        <div class="field"><label for="wake_time">Wake time</label><input id="wake_time" name="wake_time" type="time" required value="{{ request.form.get('wake_time') or preferences.wake_time.strftime('%H:%M') }}"></div>
+        <div class="field"><label for="sleep_time">Sleep time</label><input id="sleep_time" name="sleep_time" type="time" required value="{{ request.form.get('sleep_time') or preferences.sleep_time.strftime('%H:%M') }}"></div>
+        <div class="field"><label for="preferred_study_start">Preferred study start</label><input id="preferred_study_start" name="preferred_study_start" type="time" required value="{{ request.form.get('preferred_study_start') or preferences.preferred_study_start.strftime('%H:%M') }}"></div>
+        <div class="field"><label for="preferred_study_end">Preferred study end</label><input id="preferred_study_end" name="preferred_study_end" type="time" required value="{{ request.form.get('preferred_study_end') or preferences.preferred_study_end.strftime('%H:%M') }}"></div>
+      </div>
+      <div class="form-grid three">
+        <div class="field"><label for="session_duration_minutes">Session length (min)</label><input id="session_duration_minutes" name="session_duration_minutes" type="number" min="20" max="120" required value="{{ request.form.get('session_duration_minutes') or preferences.session_duration_minutes }}"></div>
+        <div class="field"><label for="break_duration_minutes">Break (min)</label><input id="break_duration_minutes" name="break_duration_minutes" type="number" min="5" max="60" required value="{{ request.form.get('break_duration_minutes') or preferences.break_duration_minutes }}"></div>
+        <div class="field"><label for="break_frequency_sessions">Break after sessions</label><input id="break_frequency_sessions" name="break_frequency_sessions" type="number" min="1" max="5" required value="{{ request.form.get('break_frequency_sessions') or preferences.break_frequency_sessions }}"></div>
+        <div class="field"><label for="daily_cap_minutes">Daily cap (min)</label><input id="daily_cap_minutes" name="daily_cap_minutes" type="number" min="30" max="600" required value="{{ request.form.get('daily_cap_minutes') or preferences.daily_cap_minutes }}"></div>
+        <div class="field"><label for="revision_frequency">Revision cycles</label><select id="revision_frequency" name="revision_frequency">{% set rev_current = request.form.get('revision_frequency') or preferences.revision_frequency|string %}{% for choice in [1,2,3] %}<option value="{{ choice }}" {{ 'selected' if rev_current == choice|string }}>{{ choice }}</option>{% endfor %}</select></div>
+      </div>
+      <fieldset class="field">
+        <legend>Lighter days</legend>
+        <div class="day-check-grid">
+          {% set posted_lighter = request.form.getlist('lighter_days') %}
+          {% for day in range(7) %}
+          <label class="checkline compact"><input type="checkbox" name="lighter_days" value="{{ day }}" {{ 'checked' if ((posted_lighter and day|string in posted_lighter) or (not posted_lighter and day in (preferences.lighter_days or []))) }}> {{ days[day] }}</label>
+          {% endfor %}
+        </div>
+        <p class="hint">A lighter day’s study cap is reduced to 120 minutes or your configured cap, whichever is lower.</p>
+      </fieldset>
+      <div class="field">
+        <label for="struggle_notes">Personal planning notes</label>
+        <textarea id="struggle_notes" name="struggle_notes" rows="3" maxlength="2000">{{ request.form.get('struggle_notes') or preferences.struggle_notes or '' }}</textarea>
+      </div>
+      <button class="btn btn-primary" type="submit">Save study preferences</button>
+    </form>
+  </section>
+
+  <aside class="dashboard-side">
+    <section class="panel">
+      <div class="section-head compact-head"><div><p class="eyebrow">Fixed week</p><h2>Commitments</h2></div><span class="chip">{{ commitments|length }}</span></div>
+      {% if commitments %}
+      <div class="commitment-days">
+        {% for day in range(7) %}
+        {% if by_day.get(day) %}
+        <div class="commitment-day">
+          <strong>{{ days[day] }}</strong>
+          {% for item in by_day.get(day) %}
+          <div class="commitment-item">
+            <div><span>{{ item.title }}</span><small>{{ item.start_time.strftime('%H:%M') }}–{{ item.end_time.strftime('%H:%M') }} · {{ item.commitment_type }}{% if item.travel_before_minutes or item.travel_after_minutes %} · travel {{ item.travel_before_minutes }}/{{ item.travel_after_minutes }}m{% endif %}</small></div>
+            <form method="post" action="{{ url_for('student.delete_commitment', commitment_id=item.id) }}" data-confirm="Remove this fixed commitment?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="icon-button" type="submit" aria-label="Remove {{ item.title }}">×</button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% else %}<p class="muted">No commitments. Add school, tuition or other recurring fixed time below.</p>{% endif %}
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Add commitment</p>
+      <form method="post" action="{{ url_for('student.add_commitment') }}" class="form-stack tight">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field"><label for="title">Title</label><input id="title" name="title" maxlength="120" required></div>
+        <div class="form-grid two">
+          <div class="field"><label for="day_of_week">Day</label><select id="day_of_week" name="day_of_week">{% for day in range(7) %}<option value="{{ day }}">{{ days[day] }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="commitment_type">Type</label><select id="commitment_type" name="commitment_type"><option value="school">School</option><option value="tuition">Tuition</option><option value="other">Other fixed</option></select></div>
+          <div class="field"><label for="start_time">Start</label><input id="start_time" name="start_time" type="time" required></div>
+          <div class="field"><label for="end_time">End</label><input id="end_time" name="end_time" type="time" required></div>
+          <div class="field"><label for="travel_before_minutes">Travel before</label><input id="travel_before_minutes" name="travel_before_minutes" type="number" min="0" max="180" value="0"></div>
+          <div class="field"><label for="travel_after_minutes">Travel after</label><input id="travel_after_minutes" name="travel_after_minutes" type="number" min="0" max="180" value="0"></div>
+        </div>
+        <button class="btn btn-block" type="submit">Add fixed commitment</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

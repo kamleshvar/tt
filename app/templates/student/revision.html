@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import progress_bar, task_row, empty_state %}
+{% block title %}Revision tracker · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Spaced repetition</p>
+    <h1>Revision tracker</h1>
+    <p class="page-sub">Revision is a separate stage. Reopening or scheduling another cycle never erases the original learning history.</p>
+  </div>
+  <a class="btn btn-small btn-quiet" href="{{ url_for('student.subjects') }}">View syllabus →</a>
+</div>
+
+{% if rows %}
+<div class="revision-grid">
+  {% for row in rows if row.revision_total %}
+  <article class="panel revision-card">
+    <div class="revision-card-head">
+      <div><p class="eyebrow">{{ row.subject.name }}</p><h3><a href="{{ url_for('student.chapter_detail', chapter_id=row.chapter.id) }}">{{ row.chapter.name }}</a></h3></div>
+      <span class="chip {{ 'chip-good' if row.stage == 'Revision completed' else 'chip-warn' }}">{{ row.stage }}</span>
+    </div>
+    <div class="revision-stat"><span>{{ row.revision_done|duration }} of {{ row.revision_total|duration }}</span><strong>{{ ((row.revision_done / row.revision_total) * 100)|round|int if row.revision_total else 0 }}%</strong></div>
+    {{ progress_bar((row.revision_done / row.revision_total * 100) if row.revision_total else 0) }}
+    {% if row.next_task %}<p class="fine-print">Next: {{ row.next_task.scheduled_date|datefmt('%d %b') }} · {{ row.next_task.title }}</p>{% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+{{ empty_state('No revision cycles yet', 'Generate a plan to schedule spaced revision for your selected chapters.', url_for('student.dashboard'), 'Go to dashboard') }}
+{% endif %}
+
+<div class="dashboard-grid section-block">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Scheduled</p><h2>Revision sessions</h2></div><span class="chip">{{ revision_tasks|length }}</span></div>
+    {% if revision_tasks %}
+    <div class="task-list">{% for task in revision_tasks %}{{ task_row(task) }}{% endfor %}</div>
+    {% else %}<p class="muted">No revision sessions have been generated.</p>{% endif %}
+  </section>
+  <aside class="dashboard-side">
+    <section class="panel">
+      <p class="eyebrow">Cycle records</p><h2>History</h2>
+      {% if records %}
+      <ul class="timeline-list">
+        {% for record in records %}
+        {% set chapter_row = chapter_map.get(record.syllabus_chapter_id) %}
+        <li><span class="timeline-date">R{{ record.revision_number }}</span><div><strong>{{ chapter_row.chapter.name if chapter_row else 'Syllabus chapter' }}</strong><span>{{ record.status|capitalize }} · due {{ record.scheduled_date|datefmt('%d %b') }}{% if record.completed_date %} · done {{ record.completed_date|datefmt('%d %b') }}{% endif %}</span></div></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">Revision records are created when revision tasks are scheduled.</p>{% endif %}
+    </section>
+    <section class="panel soft-panel">
+      <h3>Revisit without erasing</h3>
+      <p>A chapter can complete several revision cycles. Later cycles are scheduled after earlier ones and are tracked independently.</p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Create account · {{ app_name }}{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+{% block content %}
+<div class="auth-layout">
+  <section class="auth-story glass">
+    <div class="brand auth-brand">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" width="42" height="42">
+      <div><strong>TT Generator</strong><span>Built for one class only.</span></div>
+    </div>
+    <div class="auth-story-copy">
+      <p class="eyebrow light">Class 12 · Board year</p>
+      <h1>A study plan that respects the rest of your life.</h1>
+      <p>Map school and tuition, protect travel and sleep, then let the planner place chapter-level work, practice, revision and mock tests into the gaps.</p>
+    </div>
+    <ul class="auth-list">
+      <li>No email verification, OTP or SMTP</li>
+      <li>Your progress survives every restart</li>
+      <li>Missed work is recovered, not forgotten</li>
+    </ul>
+    <p class="auth-disclaimer">No emails are sent. Keep your password safe; reset support is handled by your administrator.</p>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card wide">
+      <p class="eyebrow">Class 12 only</p>
+      <h2>Create your account</h2>
+      <p class="muted">Your email is used only as a unique sign-in identifier.</p>
+      <form method="post" class="form-stack" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field">
+          {{ form.full_name.label }}
+          {{ form.full_name(autocomplete="name", placeholder="Your full name") }}
+          {% for error in form.full_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="field">
+          {{ form.email.label }}
+          {{ form.email(type="email", autocomplete="email", placeholder="you@example.com") }}
+          {% for error in form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="form-grid two">
+          <div class="field">
+            {{ form.board.label }}
+            {{ form.board() }}
+          </div>
+          <div class="field">
+            {{ form.academic_year.label }}
+            {{ form.academic_year() }}
+          </div>
+        </div>
+        <div class="field">
+          <label>Class</label>
+          <div class="read-only-field">Class 12 <span>Fixed</span></div>
+          {{ form.student_class(value="Class 12") }}
+          {% for error in form.student_class.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="form-grid two">
+          <div class="field">
+            {{ form.password.label }}
+            {{ form.password(autocomplete="new-password", placeholder="At least 10 characters") }}
+            {% for error in form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="field">
+            {{ form.confirm_password.label }}
+            {{ form.confirm_password(autocomplete="new-password", placeholder="Repeat password") }}
+            {% for error in form.confirm_password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+        </div>
+        <p class="hint">Use at least 10 characters with a letter and a number. Passwords are hashed, never stored as plain text.</p>
+        {{ form.submit(class="btn btn-primary btn-block") }}
+      </form>
+      <p class="form-foot">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+    </div>
+  </section>
+</div>
+{% endblock %}

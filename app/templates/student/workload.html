@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import progress_bar, empty_state %}
+{% block title %}Chapter workload — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Workload</p>
+    <h1>Chapter workload and confidence</h1>
+    <p class="page-sub">Learning, practice and revision hours are planning estimates inferred from chapter scope. Adjust confidence or mark a chapter for revision only; the planner applies the change when it regenerates.</p>
+  </div>
+  <span class="weeks-pill">{{ summary.chapters_total }} chapters</span>
+</div>
+
+<div class="banner {{ 'banner-danger' if not summary.feasible else 'banner-neutral' }}">
+  <div>
+    <strong>{{ 'The remaining workload exceeds available time' if not summary.feasible else 'Workload fits the current study capacity' }}</strong>
+    <p>
+      {{ summary.remaining_minutes|duration }} remaining across selected chapters.
+      Estimated conflict-free capacity before the current deadline is {{ summary.capacity_minutes|duration }}.
+      Capacity beyond 28 days is extrapolated from your routine and may change when school or tuition timings change.
+    </p>
+  </div>
+  <a class="btn btn-small btn-quiet" href="{{ url_for('student.daily_plan') }}">Open planner</a>
+</div>
+
+<div class="metric-grid compact">
+  <div class="metric-card glass">
+    <span class="metric-label">Default workload</span>
+    <strong class="metric-value">{{ summary.base_minutes|duration }}</strong>
+    <span class="metric-note">before confidence adjustments</span>
+  </div>
+  <div class="metric-card glass">
+    <span class="metric-label">Your workload</span>
+    <strong class="metric-value">{{ summary.personalized_minutes|duration }}</strong>
+    <span class="metric-note">{{ summary.completed_minutes|duration }} completed</span>
+  </div>
+  <div class="metric-card glass">
+    <span class="metric-label">Still remaining</span>
+    <strong class="metric-value">{{ summary.remaining_minutes|duration }}</strong>
+    <span class="metric-note">{{ summary.learning_remaining|duration }} learning · {{ summary.practice_remaining|duration }} practice · {{ summary.revision_remaining|duration }} revision</span>
+  </div>
+  <div class="metric-card glass">
+    <span class="metric-label">Capacity</span>
+    <strong class="metric-value">{{ summary.capacity_minutes|duration }}</strong>
+    <span class="metric-note">{{ summary.at_risk_count }} chapter{{ '' if summary.at_risk_count == 1 else 's' }} flagged at risk</span>
+  </div>
+</div>
+
+<section class="panel">
+  <form method="get" class="filter-grid" aria-label="Filter chapters">
+    <label>Search <input type="search" name="q" value="{{ filters.q }}" placeholder="Chapter or subject"></label>
+    <label>Subject
+      <select name="subject">
+        <option value="">All subjects</option>
+        {% for subject in subject_choices %}
+        <option value="{{ subject.id }}" {{ 'selected' if filters.subject == subject.id }}>{{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Status
+      <select name="status">
+        <option value="">Any status</option>
+        <option value="not_started" {{ 'selected' if filters.status == 'not_started' }}>Not started</option>
+        <option value="in_progress" {{ 'selected' if filters.status == 'in_progress' }}>In progress</option>
+        <option value="complete" {{ 'selected' if filters.status == 'complete' }}>Complete</option>
+        <option value="at_risk" {{ 'selected' if filters.status == 'at_risk' }}>At risk</option>
+      </select>
+    </label>
+    <label>Stage
+      <select name="stage">
+        <option value="">Any stage</option>
+        <option value="learning" {{ 'selected' if filters.stage == 'learning' }}>Learning</option>
+        <option value="practice" {{ 'selected' if filters.stage == 'practice' }}>Practice</option>
+        <option value="revision" {{ 'selected' if filters.stage == 'revision' }}>Revision</option>
+      </select>
+    </label>
+    <label>Difficulty
+      <select name="difficulty">
+        <option value="">Any difficulty</option>
+        <option value="easy" {{ 'selected' if filters.difficulty == 'easy' }}>Easy</option>
+        <option value="medium" {{ 'selected' if filters.difficulty == 'medium' }}>Medium</option>
+        <option value="hard" {{ 'selected' if filters.difficulty == 'hard' }}>Hard</option>
+      </select>
+    </label>
+    <label class="checkline"><input type="checkbox" name="mode" value="revision_only" {{ 'checked' if filters.mode == 'revision_only' }}> Revision-only chapters</label>
+    <div class="filter-actions">
+      <button class="btn btn-small" type="submit">Apply filters</button>
+      <a class="btn btn-small btn-quiet" href="{{ url_for('student.workload') }}">Reset</a>
+    </div>
+  </form>
+  <p class="fine-print">{{ rows|length }} chapter{{ '' if rows|length == 1 else 's' }} shown · {{ filtered_remaining|duration }} remaining in this view. Low-confidence counts: {{ summary.low_confidence_count }}; revision-only: {{ summary.revision_only_count }}.</p>
+</section>
+
+{% if rows %}
+{% set groups = rows|groupby('subject.name') %}
+{% for subject_name, subject_rows in groups %}
+<section class="panel subject-panel">
+  <div class="section-head">
+    <div><p class="eyebrow">Subject</p><h2>{{ subject_name }}</h2></div>
+    <span class="chip">{{ subject_rows|length }} chapter{{ '' if subject_rows|length == 1 else 's' }}</span>
+  </div>
+  <div class="workload-table">
+    <div class="workload-head">
+      <span>Chapter</span><span>Stage hours</span><span>Personalized</span><span>Estimate</span><span>Adjust</span>
+    </div>
+    {% for row in subject_rows %}
+    <div class="workload-row {{ 'workload-risk' if row.at_risk }}">
+      <div class="chapter-title-cell">
+        <a href="{{ url_for('student.chapter_detail', chapter_id=row.chapter.id) }}">{{ row.chapter.name }}</a>
+        <span>{{ row.chapter.unit.name }}{% if row.study_mode == 'revision_only' %} · revision only{% endif %}{% if row.at_risk %} · at risk{% endif %}</span>
+      </div>
+      <div class="workload-stage-lines">
+        <span><b>L</b> {{ row.done.learning|duration }} / {{ row.personalized.learning|duration }}</span>
+        <span><b>P</b> {{ row.done.practice|duration }} / {{ row.personalized.practice|duration }}</span>
+        <span><b>R</b> {{ row.done.revision|duration }} / {{ row.personalized.revision|duration }}</span>
+      </div>
+      <div class="workload-remaining">
+        <strong>{{ row.total_remaining|duration }}</strong>
+        <span>remaining</span>
+        {{ progress_bar(((row.personalized_total - row.total_remaining) / row.personalized_total * 100) if row.personalized_total else 0) }}
+      </div>
+      <div class="workload-estimate">
+        <span class="chip {{ 'chip-warn' if row.chapter.estimate_confidence == 'low' else '' }}">{{ row.chapter.estimate_confidence|capitalize }} confidence</span>
+        <span class="fine-print">{{ row.chapter.difficulty|capitalize }} · {{ row.chapter.estimate_method|replace('_', ' ') if row.chapter.estimate_method else 'inferred' }}</span>
+        {% if row.chapter.research_sources %}
+        <details class="inline-details">
+          <summary>Source</summary>
+          <ul class="plain-list">
+            {% for source in row.chapter.research_sources %}
+            <li><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a><span>{{ source.source_type|replace('_', ' ') }}</span></li>
+            {% endfor %}
+          </ul>
+          {% if row.chapter.research_notes %}<p>{{ row.chapter.research_notes }}</p>{% endif %}
+        </details>
+        {% endif %}
+      </div>
+      <form method="post" action="{{ url_for('student.update_chapter_workload', chapter_id=row.chapter.id) }}" class="workload-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <label>Confidence
+          <select name="confidence">
+            <option value="">Subject default</option>
+            {% for value in [1,2,3,4,5] %}
+            <option value="{{ value }}" {{ 'selected' if row.override and row.override.confidence == value }}>{{ value }} — {{ {1:'very low',2:'low',3:'moderate',4:'high',5:'very high'}[value] }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Mode
+          <select name="study_mode">
+            <option value="first_time" {{ 'selected' if row.study_mode != 'revision_only' }}>First time</option>
+            <option value="revision_only" {{ 'selected' if row.study_mode == 'revision_only' }}>Revision only</option>
+          </select>
+        </label>
+        <button class="btn btn-small" type="submit">Save</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% else %}
+{{ empty_state('No chapters match these filters', 'Reset the filters or choose a wider status range.', url_for('student.workload'), 'Clear filters') }}
+{% endif %}
+
+<div class="callout">
+  <strong>Estimates are not board-prescribed hours</strong>
+  <p>CBSE publishes chapter scope and marks, not chapter-wise study durations. Confidence changes are bounded and cannot erase practice or revision. Revision-only chapters still receive focused revision time and a small amount of learning time to rebuild context.</p>
+</div>
+{% endblock %}

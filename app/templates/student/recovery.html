@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import empty_state %}
+{% block title %}Missed work · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Recovery room</p>
+    <h1>Missed-work recovery</h1>
+    <p class="page-sub">Ranked, spread and kept inside real free slots. Postponed and overdue work is never silently marked complete.</p>
+  </div>
+  <a class="btn btn-small btn-quiet" href="{{ url_for('student.daily_plan') }}">Today’s plan →</a>
+</div>
+
+{% if preview.tasks %}
+<div class="metric-grid compact">
+  <div class="metric-card glass"><span class="metric-label">Missed tasks</span><strong class="metric-value">{{ preview.tasks|length }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Work remaining</span><strong class="metric-value">{{ preview.total_minutes|duration }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Safe recovery capacity</span><strong class="metric-value">{{ preview.available_minutes|duration }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Deadline</span><strong class="metric-value small">{{ preview.horizon_end|datefmt('%d %b %Y') }}</strong></div>
+</div>
+
+{% for warning in preview.warnings %}
+<div class="banner banner-warn"><div><strong>Capacity warning</strong><p>{{ warning }}</p></div></div>
+{% endfor %}
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head">
+      <div><p class="eyebrow">Proposed revised schedule</p><h2>Spread across future days</h2></div>
+      <span class="chip {{ 'chip-good' if preview.feasible else 'chip-warn' }}">{{ 'Feasible' if preview.feasible else 'At risk' }}</span>
+    </div>
+    {% if preview.proposals %}
+    <div class="recovery-table">
+      <div class="recovery-head"><span>Task</span><span>Priority</span><span>Proposed day</span><span>Work</span></div>
+      {% for proposal in preview.proposals %}
+      <div class="recovery-row">
+        <div><strong>{{ proposal.task.title }}</strong><span>{{ proposal.task.scheduled_date|datefmt('%d %b') }} · {{ proposal.task.task_type }}</span></div>
+        <span class="chip">{{ proposal.task.priority }}</span>
+        <span>{{ proposal.date|datefmt('%a, %d %b') }}</span>
+        <span>{{ proposal.task.estimated_minutes|duration }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">No task can be placed safely right now. Increase your daily cap or free up time in Schedule settings.</p>
+    {% endif %}
+    {% if preview.unplaced %}
+    <div class="alert alert-warning section-block"><strong>At risk and not proposed:</strong> {{ preview.unplaced|map(attribute='title')|join(', ') }}</div>
+    {% endif %}
+    <div class="recovery-actions">
+      <form method="post" data-confirm="Apply this recovery plan? Incomplete tasks will move; completed work will not be touched.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-primary" type="submit">Accept recovery plan</button>
+      </form>
+      <a class="btn btn-quiet" href="{{ url_for('student.dashboard') }}">Reject / decide later</a>
+    </div>
+    <p class="fine-print">Accepting updates incomplete task dates, records each move in task history, and recalculates workload warnings. It never marks missed work complete.</p>
+  </section>
+
+  <aside class="dashboard-side">
+    <section class="panel">
+      <p class="eyebrow">Ranking logic</p><h2>What moves first?</h2>
+      <ol class="numbered-list">
+        <li>Higher-priority and high-weightage work.</li>
+        <li>Earlier missed deadlines.</li>
+        <li>Work that fits without overlapping school, tuition, travel, sleep or other tasks.</li>
+        <li>At most two recovered tasks per day where capacity allows.</li>
+      </ol>
+    </section>
+    <section class="panel soft-panel">
+      <h3>If everything cannot fit</h3>
+      <p>The planner reports the tasks at risk instead of stacking them onto tomorrow or pretending the syllabus is covered.</p>
+      <a class="btn btn-small btn-quiet" href="{{ url_for('student.schedule_settings') }}">Adjust available time</a>
+    </section>
+  </aside>
+</div>
+{% else %}
+  {{ empty_state('Nothing is missed', 'Overdue tasks will appear here after their scheduled date passes. You can also postpone an individual task from any planner page.', url_for('student.weekly_plan'), 'Review this week') }}
+{% endif %}
+{% endblock %}

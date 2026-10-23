@@ -1,0 +1,86 @@
+{% macro progress_bar(value, label=None, tone='accent') %}
+<div class="meter-wrap">
+  <div class="meter {{ 'meter-warn' if tone == 'warn' }} {{ 'meter-good' if tone == 'good' }}">
+    <span style="width: {{ [value|float, 100]|min }}%"></span>
+  </div>
+  {% if label %}<span class="meter-label">{{ label }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro task_toggle(task) %}
+<form method="post" action="{{ url_for('student.task_status', task_id=task.id) }}" class="task-toggle" data-auto-submit>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="target" value="{{ 'reopen' if task.is_complete else 'completed' }}" data-target-input>
+  <input type="hidden" name="next" value="{{ request.full_path }}">
+  <label class="checkbox-control">
+    <input type="checkbox" {{ 'checked' if task.is_complete }} data-task-checkbox aria-label="{{ 'Reopen' if task.is_complete else 'Complete' }} {{ task.title }}">
+    <span class="checkbox-box" aria-hidden="true"></span>
+  </label>
+  <noscript><button class="btn btn-small" type="submit">Save</button></noscript>
+</form>
+{% endmacro %}
+
+{% macro task_row(task, next_url=None, show_date=True) %}
+<article class="task-row {{ 'task-done' if task.is_complete }} {{ 'task-overdue' if task.status == 'overdue' }}">
+  {{ task_toggle(task) }}
+  <div class="task-main">
+    <div class="task-meta">
+      <span class="type-dot type-{{ task.task_type }}"></span>
+      <span class="eyebrow">{{ task.task_type|capitalize }}</span>
+      {% if show_date %}<span>{{ task.scheduled_date|datefmt('%a %d %b') }}</span>{% endif %}
+      <span>{{ task.time_label }}</span>
+      <span>{{ task.estimated_minutes|duration }}</span>
+      {% if task.status == 'overdue' %}<span class="chip chip-danger">Overdue</span>{% endif %}
+      {% if task.status == 'postponed' %}<span class="chip chip-warn">Postponed</span>{% endif %}
+      {% if task.status == 'in_progress' %}<span class="chip chip-info">In progress</span>{% endif %}
+      {% if task.status == 'completed' %}<span class="chip chip-good">Done</span>{% endif %}
+    </div>
+    <h3>{{ task.title }}</h3>
+    {% if task.syllabus_chapter %}
+    <p class="task-context">{{ task.syllabus_chapter.subject.name if task.syllabus_chapter.subject }} · {{ task.syllabus_chapter.name }}</p>
+    {% endif %}
+  </div>
+  {% if task.is_open %}
+  <details class="task-menu">
+    <summary class="btn btn-small btn-quiet">Reschedule</summary>
+    <div class="task-menu-panel">
+      <form method="post" action="{{ url_for('student.postpone', task_id=task.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <input type="hidden" name="mode" value="next">
+        <button class="btn btn-small btn-block" type="submit">Next suitable slot</button>
+      </form>
+      <form method="post" action="{{ url_for('student.postpone', task_id=task.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <input type="hidden" name="mode" value="tomorrow">
+        <button class="btn btn-small btn-block btn-quiet" type="submit">Tomorrow</button>
+      </form>
+      <form method="post" action="{{ url_for('student.postpone', task_id=task.id) }}" class="inline-date">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <input type="hidden" name="mode" value="date">
+        <label class="sr-only" for="date-{{ task.id }}">New date</label>
+        <input id="date-{{ task.id }}" type="date" name="new_date" required>
+        <button class="btn btn-small" type="submit">Move</button>
+      </form>
+      <form method="post" action="{{ url_for('student.split', task_id=task.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <input type="hidden" name="parts" value="2">
+        <button class="btn btn-small btn-block btn-quiet" type="submit">Split into 2</button>
+      </form>
+    </div>
+  </details>
+  {% endif %}
+</article>
+{% endmacro %}
+
+{% macro empty_state(title, text, action_url=None, action_label=None) %}
+<div class="empty-state">
+  <div class="empty-mark" aria-hidden="true">◇</div>
+  <h3>{{ title }}</h3>
+  <p>{{ text }}</p>
+  {% if action_url and action_label %}<a class="btn" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+</div>
+{% endmacro %}

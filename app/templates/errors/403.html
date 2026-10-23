@@ -1,0 +1,13 @@
+﻿{% extends "base.html" %}
+{% block title %}403 · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="error-page">
+  <p class="error-code">403</p>
+  <h1>Access denied</h1>
+  <p>This area is restricted. Make sure you are signed in with the correct account.</p>
+  <div class="button-row">
+    <a class="btn btn-primary" href="{{ url_for('index') }}">Return to start</a>
+    <button class="btn btn-quiet" type="button" data-history-back>Go back</button>
+  </div>
+</div>
+{% endblock %}

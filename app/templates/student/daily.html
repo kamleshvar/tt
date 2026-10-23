@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import task_row, empty_state, progress_bar %}
+{% block title %}Daily plan · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Daily plan</p>
+    <h1>{{ selected|datefmt('%A') }}</h1>
+    <p class="page-sub">{{ selected|datefmt('%d %B %Y') }}{% if selected == today %} · Today{% endif %}</p>
+  </div>
+  <div class="date-nav">
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.daily_plan', date=previous_day.isoformat()) }}">← Previous</a>
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.daily_plan', date=today.isoformat()) }}">Today</a>
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.daily_plan', date=next_day.isoformat()) }}">Next →</a>
+  </div>
+</div>
+
+<div class="metric-grid compact">
+  <div class="metric-card glass"><span class="metric-label">Planned</span><strong class="metric-value">{{ planned|duration }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Completed</span><strong class="metric-value">{{ completed|duration }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Tasks</span><strong class="metric-value">{{ tasks|length }}</strong><span class="metric-note">{{ tasks|selectattr('is_complete')|list|length }} checked</span></div>
+  <div class="metric-card glass"><span class="metric-label">Unallocated capacity</span><strong class="metric-value">{{ free_minutes|duration }}</strong><span class="metric-note">remaining in this day’s study window</span></div>
+</div>
+
+{% if plan and plan.warnings %}
+<details class="banner banner-warn banner-details">
+  <summary><strong>Planner notes for this plan</strong> · {{ plan.warnings|length }}</summary>
+  <ul>{% for warning in plan.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+</details>
+{% endif %}
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="section-head">
+      <div><p class="eyebrow">Study tasks</p><h2>Work with a time and a place</h2></div>
+      <span class="chip">Persistent checkboxes</span>
+    </div>
+    {% if tasks %}
+    <div class="task-list">
+      {% for task in tasks %}{{ task_row(task, show_date=False) }}{% endfor %}
+    </div>
+    {% else %}
+      {{ empty_state('No tasks on this date', 'There may be no planned study, or the plan has not been generated yet.', url_for('student.weekly_plan'), 'Review the week') }}
+    {% endif %}
+  </section>
+
+  <aside class="dashboard-side">
+    <section class="panel">
+      <div class="section-head compact-head"><div><p class="eyebrow">Fixed time</p><h2>Commitments</h2></div></div>
+      {% if commitments %}
+      <ul class="timeline-list">
+        {% for item in commitments %}
+        <li>
+          <span class="timeline-date">{{ item.start_time.strftime('%H:%M') }}</span>
+          <div><strong>{{ item.title }}</strong><span>{{ item.end_time.strftime('%H:%M') }} · {{ item.commitment_type }}{% if item.travel_before_minutes or item.travel_after_minutes %} · travel buffer{% endif %}</span></div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No fixed commitments recorded for {{ selected.strftime('%A') }}.</p>
+      {% endif %}
+    </section>
+    <section class="panel soft-panel">
+      <h3>If plans change</h3>
+      <p>Every incomplete task can move to the next suitable slot, a specific date, or be split. Postponing never marks it complete.</p>
+      <a class="btn btn-small btn-quiet" href="{{ url_for('student.recovery') }}">Recover missed work</a>
+      <a class="btn btn-small btn-quiet" href="{{ url_for('student.schedule_settings') }}">Edit weekly schedule</a>
+    </section>
+    <section class="panel">
+      <p class="eyebrow">Honest progress</p>
+      {% set daily_done = (completed / planned * 100) if planned else 0 %}
+      {{ progress_bar(daily_done, daily_done|round|int ~ '% of today planned') }}
+      <p class="fine-print">Completing a session logs time and task state. It does not automatically mean a chapter is revised or exam-ready.</p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

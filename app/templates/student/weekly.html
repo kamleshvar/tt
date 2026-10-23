@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "student/_macros.html" import empty_state %}
+{% block title %}Weekly plan · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Weekly plan</p>
+    <h1>{{ start|datefmt('%d %b') }} – {{ end|datefmt('%d %b %Y') }}</h1>
+    <p class="page-sub">Commitments, free space and chapter work side by side.</p>
+  </div>
+  <div class="date-nav">
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.weekly_plan', start=previous_week.isoformat()) }}">← Previous</a>
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.weekly_plan') }}">This week</a>
+    <a class="btn btn-small btn-quiet" href="{{ url_for('student.weekly_plan', start=next_week.isoformat()) }}">Next →</a>
+  </div>
+</div>
+
+<div class="metric-grid compact">
+  <div class="metric-card glass"><span class="metric-label">Planned</span><strong class="metric-value">{{ summary.planned_minutes|duration }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Completed</span><strong class="metric-value">{{ summary.completed_minutes|duration }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Tasks checked</span><strong class="metric-value">{{ summary.completed }}/{{ summary.total }}</strong></div>
+  <div class="metric-card glass"><span class="metric-label">Overdue in week</span><strong class="metric-value">{{ summary.overdue }}</strong></div>
+</div>
+
+<div class="week-board">
+  {% for day in days %}
+  {% set day_tasks = by_day.get(day, []) %}
+  {% set planned_mins = day_tasks|sum(attribute='estimated_minutes') %}
+  <section class="week-day {{ 'is-today' if day == today }} {{ 'is-lighter' if day.weekday() in (current_user.preferences.lighter_days or []) }}">
+    <header>
+      <div><span>{{ day|datefmt('%A') }}</span><strong>{{ day|datefmt('%d %b') }}</strong></div>
+      <span class="week-load">{{ planned_mins|duration }}</span>
+    </header>
+    {% if commitments.get(day) %}
+    <div class="week-commitments">
+      {% for item in commitments.get(day) %}
+      <span>{{ item.start_time.strftime('%H:%M') }} {{ item.title }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="week-tasks">
+      {% for task in day_tasks %}
+      <article class="week-task {{ 'task-done' if task.is_complete }} type-border-{{ task.task_type }}">
+        <form method="post" action="{{ url_for('student.task_status', task_id=task.id) }}" class="week-check" data-auto-submit>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="target" value="{{ 'reopen' if task.is_complete else 'completed' }}" data-target-input>
+          <input type="hidden" name="next" value="{{ request.full_path }}">
+          <label class="checkbox-control small">
+            <input type="checkbox" {{ 'checked' if task.is_complete }} data-task-checkbox aria-label="{{ 'Reopen' if task.is_complete else 'Complete' }} {{ task.title }}">
+            <span class="checkbox-box"></span>
+          </label>
+          <noscript><button class="btn btn-small" type="submit">Save</button></noscript>
+        </form>
+        <div>
+          <a href="{{ url_for('student.daily_plan', date=day.isoformat()) }}" class="week-task-title">{{ task.title }}</a>
+          <span class="week-task-meta">{{ task.start_time.strftime('%H:%M') if task.start_time }} · {{ task.estimated_minutes|duration }}{% if task.status == 'overdue' %} · overdue{% endif %}</span>
+        </div>
+      </article>
+      {% else %}
+      <p class="week-empty">No study tasks.</p>
+      {% endfor %}
+    </div>
+    <footer><a class="text-link small-link" href="{{ url_for('student.daily_plan', date=day.isoformat()) }}">Open day →</a></footer>
+  </section>
+  {% endfor %}
+</div>
+
+<div class="week-footnote">
+  <p>Tasks placed on lighter days respect the reduced daily cap you configured. Unallocated space is deliberate: it protects rest and recovery.</p>
+  <a class="btn btn-small btn-quiet" href="{{ url_for('student.schedule_settings') }}">Adjust weekly schedule</a>
+</div>
+{% endblock %}
