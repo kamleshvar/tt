@@ -1,0 +1,90 @@
+{% extends "admin/base.html" %}
+{% block title %}Planner administration · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="admin-page-head">
+  <div><p class="eyebrow">Policy & health</p><h1>Planner administration</h1><p>Tune defaults for new profiles and inspect plans that report workload risk.</p></div>
+  <span class="chip {{ 'chip-warn' if problem_plans else 'chip-good' }}">{{ problem_plans|length }} flagged plan{{ '' if problem_plans|length == 1 else 's' }}</span>
+</div>
+
+<div class="admin-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Defaults</p><h2>New student preferences</h2></div></div>
+    <form method="post" class="form-stack tight">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid three">
+        <div class="field"><label for="default_session_duration_minutes">Session duration</label><div class="input-suffix"><input id="default_session_duration_minutes" name="default_session_duration_minutes" type="number" min="20" max="120" value="{{ defaults.session }}" required><span>min</span></div></div>
+        <div class="field"><label for="default_daily_cap_minutes">Daily cap</label><div class="input-suffix"><input id="default_daily_cap_minutes" name="default_daily_cap_minutes" type="number" min="30" max="600" value="{{ defaults.cap }}" required><span>min</span></div></div>
+        <div class="field"><label for="default_revision_frequency">Revision cycles</label><input id="default_revision_frequency" name="default_revision_frequency" type="number" min="1" max="3" value="{{ defaults.revision }}" required></div>
+      </div>
+      <button class="btn btn-primary" type="submit">Save defaults</button>
+    </form>
+    <div class="callout"><strong>Defaults are not retroactive</strong><p>Existing students keep their saved preferences. Regeneration uses each student’s own schedule, selected subjects and exam date.</p></div>
+  </section>
+
+  <aside class="admin-side">
+    <section class="panel soft-panel">
+      <p class="eyebrow">Planning rules</p><h2>What the engine guarantees</h2>
+      <ul class="check-list">
+        <li>No deliberate overlap with school, tuition, travel or sleep.</li>
+        <li>Completed work is preserved during regeneration.</li>
+        <li>Missed work is reported, not silently discarded.</li>
+        <li>Infeasible workload is flagged instead of hidden.</li>
+        <li>Feasibility is not treated as mastery.</li>
+      </ul>
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Known limits</p>
+      <h3>Planning is heuristic</h3>
+      <p>Estimates come from syllabus metadata and student preferences. The planner does not know actual comprehension, school holidays or sudden schedule changes; students must reschedule and use recovery honestly.</p>
+    </section>
+  </aside>
+</div>
+
+<section class="panel section-block">
+  <div class="section-head"><div><p class="eyebrow">Attention</p><h2>Flagged active plans</h2></div><span class="chip">{{ problem_plans|length }}</span></div>
+  {% if problem_plans %}
+  <div class="admin-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Student</th><th>Plan</th><th>Feasibility</th><th>Warnings</th><th>Generated</th><th></th></tr></thead>
+      <tbody>
+        {% for plan in problem_plans %}
+        <tr>
+          <td><div class="student-cell"><span class="avatar small">{{ plan.user.full_name[:1]|upper }}</span><div><a href="{{ url_for('admin.student_detail', user_id=plan.user_id) }}">{{ plan.user.full_name }}</a><span>{{ plan.user.email }}</span></div></div></td>
+          <td>v{{ plan.version_number }}<span class="cell-sub">{{ plan.horizon_start|datefmt('%d %b') }} – {{ plan.horizon_end|datefmt('%d %b') }}</span></td>
+          <td><span class="chip {{ 'chip-good' if plan.feasible else 'chip-danger' }}">{{ 'Timing fits' if plan.feasible else 'Does not fit' }}</span></td>
+          <td><ul class="inline-warnings">{% for warning in plan.warnings[:3] %}<li>{{ warning }}</li>{% endfor %}{% if plan.warnings|length > 3 %}<li>+{{ plan.warnings|length - 3 }} more</li>{% endif %}</ul></td>
+          <td>{{ plan.generated_at|datefmt('%d %b %Y') }}</td>
+          <td><a class="text-link" href="{{ url_for('admin.student_detail', user_id=plan.user_id) }}">Review →</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state compact"><h3>No flagged plans</h3><p>All active plans currently fit within their recorded availability, or no plans exist yet.</p></div>
+  {% endif %}
+</section>
+
+<section class="panel section-block">
+  <div class="section-head"><div><p class="eyebrow">Recent</p><h2>Active plans</h2></div><span class="chip">{{ active_plans|length }} latest</span></div>
+  {% if active_plans %}
+  <div class="admin-table-wrap">
+    <table class="data-table compact-table">
+      <thead><tr><th>Student</th><th>Version</th><th>Horizon</th><th>Feasible</th><th>Syllabus</th><th>Generated</th></tr></thead>
+      <tbody>
+        {% for plan in active_plans %}
+        <tr>
+          <td><a href="{{ url_for('admin.student_detail', user_id=plan.user_id) }}">{{ plan.user.full_name }}</a></td>
+          <td>v{{ plan.version_number }}</td>
+          <td>{{ plan.horizon_start|datefmt('%d %b') }} – {{ plan.horizon_end|datefmt('%d %b %Y') }}</td>
+          <td>{{ 'Yes' if plan.feasible else 'No' }}</td>
+          <td>{{ plan.syllabus_version.version_label }} <span class="chip {{ 'chip-warn' if plan.syllabus_version.status == 'draft' else 'chip-good' }}">{{ plan.syllabus_version.status }}</span></td>
+          <td>{{ plan.generated_at|datefmt('%d %b %Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">No active plans have been generated.</p>{% endif %}
+</section>
+{% endblock %}

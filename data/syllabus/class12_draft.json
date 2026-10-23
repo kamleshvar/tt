@@ -1,0 +1,478 @@
+{
+  "metadata": {
+    "board": "CBSE",
+    "academic_year": "2026-27",
+    "version_label": "draft-2026.1",
+    "status": "draft",
+    "source": "Built-in demonstration dataset — not an official board publication.",
+    "notes": "DRAFT AND UNVERIFIED. This dataset exists so a class can be planned end to end. Replace it through Admin > Syllabus with a verified official Class 12 syllabus before using it for real academic decisions. Chapter estimates are planning estimates, not board weightage."
+  },
+  "subjects": [
+    {
+      "name": "English Core",
+      "code": "ENG",
+      "units": [
+        {
+          "name": "Reading and Writing Skills",
+          "chapters": [
+            {
+              "name": "Reading Comprehension",
+              "estimated_minutes": 240,
+              "topics": [
+                {"name": "Unseen passages", "estimated_minutes": 90},
+                {"name": "Note-making and summarising", "estimated_minutes": 75},
+                {"name": "Inference-based questions", "estimated_minutes": 75}
+              ]
+            },
+            {
+              "name": "Writing Skills",
+              "estimated_minutes": 300,
+              "topics": [
+                {"name": "Notice and invitation writing", "estimated_minutes": 75},
+                {"name": "Letters and applications", "estimated_minutes": 105},
+                {"name": "Article and report writing", "estimated_minutes": 120}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Literature",
+          "chapters": [
+            {
+              "name": "Flamingo: Prose and Poetry",
+              "estimated_minutes": 420,
+              "topics": [
+                {"name": "Prose themes and characters", "estimated_minutes": 210},
+                {"name": "Poetry devices and interpretation", "estimated_minutes": 210}
+              ]
+            },
+            {
+              "name": "Vistas: Supplementary Reader",
+              "estimated_minutes": 300,
+              "topics": [
+                {"name": "Chapter summaries and themes", "estimated_minutes": 180},
+                {"name": "Long-answer preparation", "estimated_minutes": 120}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mathematics",
+      "code": "MATH",
+      "units": [
+        {
+          "name": "Calculus",
+          "chapters": [
+            {
+              "name": "Relations and Functions",
+              "estimated_minutes": 300,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Types of relations", "estimated_minutes": 90},
+                {"name": "One-one and onto functions", "estimated_minutes": 105},
+                {"name": "Inverse trigonometric functions", "estimated_minutes": 105}
+              ]
+            },
+            {
+              "name": "Continuity and Differentiability",
+              "estimated_minutes": 420,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Continuity", "estimated_minutes": 105},
+                {"name": "Differentiation rules", "estimated_minutes": 105},
+                {"name": "Logarithmic differentiation", "estimated_minutes": 90},
+                {"name": "Mean value theorems", "estimated_minutes": 120}
+              ]
+            },
+            {
+              "name": "Application of Derivatives",
+              "estimated_minutes": 360,
+              "weightage_marks": 6,
+              "topics": [
+                {"name": "Tangents and normals", "estimated_minutes": 90},
+                {"name": "Increasing and decreasing functions", "estimated_minutes": 90},
+                {"name": "Maxima and minima", "estimated_minutes": 180}
+              ]
+            },
+            {
+              "name": "Integrals",
+              "estimated_minutes": 480,
+              "weightage_marks": 10,
+              "topics": [
+                {"name": "Standard integrals", "estimated_minutes": 120},
+                {"name": "Substitution and parts", "estimated_minutes": 150},
+                {"name": "Definite integrals", "estimated_minutes": 120},
+                {"name": "Area under curves", "estimated_minutes": 90}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Algebra, Vectors and Probability",
+          "chapters": [
+            {
+              "name": "Matrices and Determinants",
+              "estimated_minutes": 360,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Matrix operations", "estimated_minutes": 120},
+                {"name": "Determinants and inverse", "estimated_minutes": 150},
+                {"name": "System of linear equations", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Vector Algebra",
+              "estimated_minutes": 300,
+              "weightage_marks": 6,
+              "topics": [
+                {"name": "Vector operations", "estimated_minutes": 120},
+                {"name": "Dot and cross products", "estimated_minutes": 120},
+                {"name": "Applications to geometry", "estimated_minutes": 60}
+              ]
+            },
+            {
+              "name": "Probability",
+              "estimated_minutes": 300,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Conditional probability", "estimated_minutes": 120},
+                {"name": "Bayes theorem", "estimated_minutes": 90},
+                {"name": "Random variables and distributions", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Linear Programming",
+              "estimated_minutes": 180,
+              "weightage_marks": 5,
+              "topics": [
+                {"name": "Graphical solutions", "estimated_minutes": 120},
+                {"name": "Feasible regions", "estimated_minutes": 60}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Physics",
+      "code": "PHY",
+      "units": [
+        {
+          "name": "Mechanics and Electrodynamics",
+          "chapters": [
+            {
+              "name": "Electric Charges and Fields",
+              "estimated_minutes": 300,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Coulomb's law and superposition", "estimated_minutes": 120},
+                {"name": "Electric field and flux", "estimated_minutes": 90},
+                {"name": "Gauss's law and applications", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Current Electricity",
+              "estimated_minutes": 360,
+              "weightage_marks": 7,
+              "topics": [
+                {"name": "Ohm's law and resistivity", "estimated_minutes": 90},
+                {"name": "Kirchhoff's laws", "estimated_minutes": 120},
+                {"name": "Electrical circuits", "estimated_minutes": 150}
+              ]
+            },
+            {
+              "name": "Moving Charges and Magnetism",
+              "estimated_minutes": 360,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Biot-Savart law", "estimated_minutes": 120},
+                {"name": "Ampere's circuital law", "estimated_minutes": 120},
+                {"name": "Magnetic force and torque", "estimated_minutes": 120}
+              ]
+            },
+            {
+              "name": "Ray Optics and Optical Instruments",
+              "estimated_minutes": 420,
+              "weightage_marks": 9,
+              "topics": [
+                {"name": "Reflection and refraction", "estimated_minutes": 150},
+                {"name": "Lenses and mirrors", "estimated_minutes": 150},
+                {"name": "Optical instruments", "estimated_minutes": 120}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Modern Physics and Electronics",
+          "chapters": [
+            {
+              "name": "Dual Nature of Radiation and Matter",
+              "estimated_minutes": 300,
+              "weightage_marks": 6,
+              "topics": [
+                {"name": "Photoelectric effect", "estimated_minutes": 150},
+                {"name": "Matter waves", "estimated_minutes": 90},
+                {"name": "Numericals", "estimated_minutes": 60}
+              ]
+            },
+            {
+              "name": "Atoms and Nuclei",
+              "estimated_minutes": 300,
+              "weightage_marks": 6,
+              "topics": [
+                {"name": "Atomic models", "estimated_minutes": 120},
+                {"name": "Nuclear reactions", "estimated_minutes": 120},
+                {"name": "Radioactivity", "estimated_minutes": 60}
+              ]
+            },
+            {
+              "name": "Semiconductor Electronics",
+              "estimated_minutes": 300,
+              "weightage_marks": 7,
+              "topics": [
+                {"name": "Semiconductors and diodes", "estimated_minutes": 150},
+                {"name": "Rectifiers", "estimated_minutes": 90},
+                {"name": "Logic gates", "estimated_minutes": 60}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Chemistry",
+      "code": "CHEM",
+      "units": [
+        {
+          "name": "Physical and Inorganic Chemistry",
+          "chapters": [
+            {
+              "name": "Solutions",
+              "estimated_minutes": 300,
+              "weightage_marks": 7,
+              "topics": [
+                {"name": "Concentration terms", "estimated_minutes": 90},
+                {"name": "Raoult's law", "estimated_minutes": 120},
+                {"name": "Colligative properties", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Electrochemistry",
+              "estimated_minutes": 360,
+              "weightage_marks": 9,
+              "topics": [
+                {"name": "Electrochemical cells", "estimated_minutes": 120},
+                {"name": "Nernst equation", "estimated_minutes": 120},
+                {"name": "Conductance and electrolysis", "estimated_minutes": 120}
+              ]
+            },
+            {
+              "name": "Chemical Kinetics",
+              "estimated_minutes": 300,
+              "weightage_marks": 7,
+              "topics": [
+                {"name": "Rate laws", "estimated_minutes": 120},
+                {"name": "Integrated rate equations", "estimated_minutes": 120},
+                {"name": "Collision theory", "estimated_minutes": 60}
+              ]
+            },
+            {
+              "name": "p-Block Elements",
+              "estimated_minutes": 360,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Group trends", "estimated_minutes": 120},
+                {"name": "Important compounds", "estimated_minutes": 150},
+                {"name": "Reactions and preparation", "estimated_minutes": 90}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Organic Chemistry",
+          "chapters": [
+            {
+              "name": "Haloalkanes and Haloarenes",
+              "estimated_minutes": 300,
+              "weightage_marks": 6,
+              "topics": [
+                {"name": "Nomenclature and preparation", "estimated_minutes": 120},
+                {"name": "Reaction mechanisms", "estimated_minutes": 120},
+                {"name": "Uses and environmental effects", "estimated_minutes": 60}
+              ]
+            },
+            {
+              "name": "Aldehydes, Ketones and Carboxylic Acids",
+              "estimated_minutes": 390,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Preparation and properties", "estimated_minutes": 150},
+                {"name": "Named reactions", "estimated_minutes": 150},
+                {"name": "Distinguishing tests", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Biomolecules",
+              "estimated_minutes": 270,
+              "weightage_marks": 5,
+              "topics": [
+                {"name": "Carbohydrates and proteins", "estimated_minutes": 120},
+                {"name": "Enzymes and vitamins", "estimated_minutes": 90},
+                {"name": "Nucleic acids", "estimated_minutes": 60}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Business Studies",
+      "code": "BST",
+      "units": [
+        {
+          "name": "Management and Business Environment",
+          "chapters": [
+            {
+              "name": "Nature and Significance of Management",
+              "estimated_minutes": 240,
+              "weightage_marks": 6,
+              "topics": [
+                {"name": "Management concepts", "estimated_minutes": 90},
+                {"name": "Coordination", "estimated_minutes": 60},
+                {"name": "Levels of management", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Principles and Functions of Management",
+              "estimated_minutes": 300,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Planning and organising", "estimated_minutes": 120},
+                {"name": "Staffing and directing", "estimated_minutes": 90},
+                {"name": "Controlling", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Business Environment",
+              "estimated_minutes": 240,
+              "weightage_marks": 5,
+              "topics": [
+                {"name": "Dimensions of environment", "estimated_minutes": 120},
+                {"name": "Environmental scanning", "estimated_minutes": 120}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Business Finance and Marketing",
+          "chapters": [
+            {
+              "name": "Financial Management",
+              "estimated_minutes": 300,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Financial decisions", "estimated_minutes": 120},
+                {"name": "Capital structure", "estimated_minutes": 90},
+                {"name": "Working capital", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Marketing Management",
+              "estimated_minutes": 330,
+              "weightage_marks": 9,
+              "topics": [
+                {"name": "Marketing mix", "estimated_minutes": 150},
+                {"name": "Product and price", "estimated_minutes": 90},
+                {"name": "Promotion and place", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Consumer Protection",
+              "estimated_minutes": 240,
+              "weightage_marks": 6,
+              "topics": [
+                {"name": "Consumer rights", "estimated_minutes": 120},
+                {"name": "Redressal machinery", "estimated_minutes": 120}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Computer Science",
+      "code": "CS",
+      "units": [
+        {
+          "name": "Programming and Data Structures",
+          "chapters": [
+            {
+              "name": "Python Revision and Data Structures",
+              "estimated_minutes": 300,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Lists and tuples", "estimated_minutes": 90},
+                {"name": "Dictionaries", "estimated_minutes": 90},
+                {"name": "Functions and modules", "estimated_minutes": 120}
+              ]
+            },
+            {
+              "name": "File Handling",
+              "estimated_minutes": 240,
+              "weightage_marks": 5,
+              "topics": [
+                {"name": "Text files", "estimated_minutes": 120},
+                {"name": "CSV and binary files", "estimated_minutes": 120}
+              ]
+            },
+            {
+              "name": "Stacks and Queues",
+              "estimated_minutes": 240,
+              "weightage_marks": 5,
+              "topics": [
+                {"name": "Stack operations", "estimated_minutes": 120},
+                {"name": "Queue operations", "estimated_minutes": 120}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Databases and Networks",
+          "chapters": [
+            {
+              "name": "Relational Databases and SQL",
+              "estimated_minutes": 360,
+              "weightage_marks": 10,
+              "topics": [
+                {"name": "Relational model", "estimated_minutes": 120},
+                {"name": "SQL queries", "estimated_minutes": 150},
+                {"name": "Joins and aggregate functions", "estimated_minutes": 90}
+              ]
+            },
+            {
+              "name": "Computer Networks",
+              "estimated_minutes": 300,
+              "weightage_marks": 8,
+              "topics": [
+                {"name": "Network devices and topology", "estimated_minutes": 120},
+                {"name": "Protocols and addressing", "estimated_minutes": 120},
+                {"name": "Web services", "estimated_minutes": 60}
+              ]
+            },
+            {
+              "name": "Cyber Safety",
+              "estimated_minutes": 180,
+              "weightage_marks": 4,
+              "topics": [
+                {"name": "Digital footprints and identity", "estimated_minutes": 90},
+                {"name": "Cyber crime awareness", "estimated_minutes": 90}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

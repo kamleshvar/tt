@@ -1,0 +1,75 @@
+2026-10-23 07:04:39,169 ERROR app: Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask\app.py", line 915, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask\app.py", line 1291, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 229, in csrf_protect
+    self.protect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 261, in protect
+    validate_csrf(self._get_csrf_token())
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 108, in validate_csrf
+    token = s.loads(data, max_age=time_limit)
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\itsdangerous\timed.py", line 204, in loads
+    base64d, timestamp = signer.unsign(
+                         ~~~~~~~~~~~~~^
+        s, max_age=max_age, return_timestamp=True
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\itsdangerous\timed.py", line 141, in unsign
+    if age > max_age:
+       ^^^^^^^^^^^^^
+TypeError: '>' not supported between instances of 'int' and 'datetime.timedelta'
+2026-10-23 07:05:30,714 ERROR app: Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask\app.py", line 915, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask\app.py", line 1291, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 229, in csrf_protect
+    self.protect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 261, in protect
+    validate_csrf(self._get_csrf_token())
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 108, in validate_csrf
+    token = s.loads(data, max_age=time_limit)
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\itsdangerous\timed.py", line 204, in loads
+    base64d, timestamp = signer.unsign(
+                         ~~~~~~~~~~~~~^
+        s, max_age=max_age, return_timestamp=True
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\itsdangerous\timed.py", line 141, in unsign
+    if age > max_age:
+       ^^^^^^^^^^^^^
+TypeError: '>' not supported between instances of 'int' and 'datetime.timedelta'
+2026-10-23 07:05:49,204 ERROR app: Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask\app.py", line 915, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask\app.py", line 1291, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 229, in csrf_protect
+    self.protect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 261, in protect
+    validate_csrf(self._get_csrf_token())
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\flask_wtf\csrf.py", line 108, in validate_csrf
+    token = s.loads(data, max_age=time_limit)
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\itsdangerous\timed.py", line 204, in loads
+    base64d, timestamp = signer.unsign(
+                         ~~~~~~~~~~~~~^
+        s, max_age=max_age, return_timestamp=True
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\kamle\PycharmProjects\PythonProject\.venv\Lib\site-packages\itsdangerous\timed.py", line 141, in unsign
+    if age > max_age:
+       ^^^^^^^^^^^^^
+TypeError: '>' not supported between instances of 'int' and 'datetime.timedelta'

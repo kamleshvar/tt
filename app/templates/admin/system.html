@@ -1,0 +1,78 @@
+{% extends "admin/base.html" %}
+{% block title %}System health · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="admin-page-head">
+  <div><p class="eyebrow">Diagnostics</p><h1>System health</h1><p>Configuration presence, database connectivity, migration state and redacted application logs.</p></div>
+  <span class="chip {{ 'chip-good' if db_status == 'connected' else 'chip-danger' }}">{{ db_status|title }}</span>
+</div>
+
+<div class="metric-grid admin-metrics">
+  <div class="metric-card glass"><span class="metric-label">Environment</span><strong class="metric-value small">{{ environment|title }}</strong><span class="metric-note">App v{{ app_version }}</span></div>
+  <div class="metric-card glass"><span class="metric-label">Database</span><strong class="metric-value small">{{ db_status|title }}</strong><span class="metric-note">{{ env_status.SQLALCHEMY_DATABASE_URI }}</span></div>
+  <div class="metric-card glass"><span class="metric-label">Migration</span><strong class="metric-value small">{{ 'Current' if alembic not in ['not available','not migrated (run flask db upgrade)'] else 'Needs attention' }}</strong><span class="metric-note">{{ alembic }}</span></div>
+  <div class="metric-card glass"><span class="metric-label">Admin session</span><strong class="metric-value small">{{ config.ADMIN_SESSION_MINUTES }} min</strong><span class="metric-note">Password-only access</span></div>
+</div>
+
+<div class="admin-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Configuration</p><h2>Environment checks</h2></div><span class="chip">{{ env_status|length }} keys</span></div>
+    <div class="env-list">
+      {% for key, value in env_status.items() %}
+      <div class="env-row">
+        <code>{{ key }}</code>
+        {% if value is sameas true %}<span class="chip chip-good">Configured</span>
+        {% elif value is sameas false %}<span class="chip chip-danger">Missing / off</span>
+        {% else %}<span class="mono-value">{{ value }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="alert alert-warning">
+      <strong>Production essentials</strong>
+      <ul>
+        <li>Set a strong <code>SECRET_KEY</code> and <code>ADMIN_PASSWORD</code>; the app refuses to start in production without them.</li>
+        <li>Use PostgreSQL, not SQLite, for production concurrency and backups.</li>
+        <li>Terminate TLS at the reverse proxy and keep secure cookies enabled behind HTTPS.</li>
+        <li>Run <code>flask db upgrade</code> before starting each new release.</li>
+      </ul>
+    </div>
+    <div class="callout"><strong>Secrets are never displayed</strong><p>Logs are passed through secret redaction. The database URL here is host/database only, without credentials.</p></div>
+  </section>
+
+  <aside class="admin-side">
+    <section class="panel">
+      <p class="eyebrow">Maintenance</p><h2>Release checklist</h2>
+      <ol class="numbered-list">
+        <li>Back up the PostgreSQL database.</li>
+        <li>Deploy code and install requirements.</li>
+        <li>Run migrations and verify activation.</li>
+        <li>Restart Gunicorn and check this page.</li>
+        <li>Confirm admin login, student login and plan generation.</li>
+      </ol>
+      <pre class="mini-code">cd /opt/tt-generator
+source .venv/bin/activate
+flask --app wsgi db upgrade
+sudo systemctl restart tt-generator</pre>
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Backups</p><h2>Data to preserve</h2>
+      <ul class="check-list">
+        <li>The PostgreSQL database.</li>
+        <li>The protected <code>.env</code> file.</li>
+        <li>Uploaded or custom syllabus JSON files.</li>
+        <li>Application logs needed for incident review.</li>
+      </ul>
+      <p class="fine-print">Deactivation and password resets are audit-logged. Account deletion is intentionally not offered here.</p>
+    </section>
+  </aside>
+</div>
+
+<section class="panel section-block">
+  <div class="section-head"><div><p class="eyebrow">Application log</p><h2>Latest 120 lines</h2></div><span class="chip">Secrets redacted</span></div>
+  {% if logs %}
+  <pre class="log-view">{% for line in logs %}{{ line }}
+{% endfor %}</pre>
+  {% else %}
+  <div class="empty-state compact"><h3>No readable log file</h3><p>The application may log to stdout under systemd/Gunicorn. Check <code>journalctl -u tt-generator</code> on the server.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

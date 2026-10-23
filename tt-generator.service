@@ -1,0 +1,25 @@
+[Unit]
+Description=TT Generator study planner
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ttgen
+Group=ttgen
+WorkingDirectory=/opt/tt-generator
+EnvironmentFile=/opt/tt-generator/.env
+ExecStart=/opt/tt-generator/.venv/bin/gunicorn --config deployment/gunicorn.conf.py wsgi:app
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

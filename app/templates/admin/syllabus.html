@@ -1,0 +1,98 @@
+{% extends "admin/base.html" %}
+{% block title %}Syllabus administration · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="admin-page-head">
+  <div><p class="eyebrow">Content</p><h1>Syllabus versions</h1><p>Import structured JSON, inspect structural checks, and control which version new students receive.</p></div>
+  <span class="chip">Structure checks only</span>
+</div>
+
+<div class="banner banner-info">
+  <div><strong>Verification is a human responsibility</strong><p>The importer validates JSON structure and conflicts. It cannot prove that a dataset matches an official board circular. Keep the built-in dataset marked draft until someone verifies it.</p></div>
+</div>
+
+{% if report %}
+<section class="panel">
+  <div class="section-head"><div><p class="eyebrow">Latest parse</p><h2>Validation report</h2></div><span class="chip {{ 'chip-good' if report.valid else 'chip-danger' }}">{{ 'Valid' if report.valid else 'Rejected' }}</span></div>
+  {% if report.valid %}
+  <div class="metric-grid compact report-metrics">
+    <div class="metric-card glass"><span class="metric-label">Subjects</span><strong class="metric-value">{{ report.subject_count }}</strong></div>
+    <div class="metric-card glass"><span class="metric-label">Chapters</span><strong class="metric-value">{{ report.chapter_count }}</strong></div>
+    <div class="metric-card glass"><span class="metric-label">Topics</span><strong class="metric-value">{{ report.topic_count }}</strong></div>
+    <div class="metric-card glass"><span class="metric-label">Warnings</span><strong class="metric-value">{{ report.warnings|length }}</strong></div>
+  </div>
+  {% endif %}
+  {% if report.errors %}<div class="alert alert-error"><strong>Errors</strong><ul>{% for item in report.errors %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+  {% if report.warnings %}<div class="alert alert-warning"><strong>Warnings</strong><ul>{% for item in report.warnings[:20] %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+</section>
+{% endif %}
+
+<div class="admin-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Inventory</p><h2>Imported versions</h2></div><span class="chip">{{ version_rows|length }}</span></div>
+    {% if version_rows %}
+    <div class="syllabus-versions">
+      {% for row in version_rows %}
+      {% set version = row.version %}
+      <article class="syllabus-version-card {{ 'current-version' if version.is_current }}">
+        <div class="version-card-head">
+          <div>
+            <div class="version-badges"><span class="chip {{ 'chip-good' if version.status == 'validated' else ('chip-warn' if version.status == 'draft' else '') }}">{{ version.status_label }}</span>{% if version.is_current %}<span class="chip chip-info">Current for new onboarding</span>{% endif %}</div>
+            <h3>{{ version.board }} · {{ version.academic_year }}</h3>
+            <p>{{ version.version_label }} · imported {{ version.imported_at|datefmt('%d %b %Y %H:%M') }}</p>
+          </div>
+          <div class="version-actions">
+            {% if not version.is_current and row.validation.valid %}
+            <form method="post" action="{{ url_for('admin.activate_syllabus', version_id=version.id) }}" data-confirm="Mark this version current for new onboarding? Existing plans keep their syllabus version.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-small" type="submit">Make current</button>
+            </form>
+            {% elif not version.is_current %}
+            <span class="chip chip-danger">Fix structure first</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="version-stats">
+          <span><strong>{{ row.validation.subject_count }}</strong> subjects</span>
+          <span><strong>{{ row.validation.chapter_count }}</strong> chapters</span>
+          <span><strong>{{ row.validation.topic_count }}</strong> topics</span>
+          <span><strong>{{ row.usage }}</strong> student links</span>
+          <span><strong>{{ row.validation.removed_chapters }}</strong> retired chapters</span>
+        </div>
+        {% if version.source_file %}<p class="fine-print">Source: <code>{{ version.source_file }}</code>{% if version.checksum %} · checksum {{ version.checksum[:12] }}…{% endif %}</p>{% endif %}
+        {% if row.validation.errors %}<div class="alert alert-error"><strong>Structure errors</strong><ul>{% for item in row.validation.errors %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+        {% if row.validation.warnings %}<details class="warning-details"><summary>{{ row.validation.warnings|length }} warning(s)</summary><ul>{% for item in row.validation.warnings %}<li>{{ item }}</li>{% endfor %}</ul></details>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}<p class="muted">No syllabus imported. Use the form beside this panel or run <code>flask seed-syllabus</code>.</p>{% endif %}
+  </section>
+
+  <aside class="admin-side">
+    <section class="panel">
+      <p class="eyebrow">Import</p><h2>Add or update a version</h2>
+      <p class="hint">Re-importing the same board, year and version label updates that version while retiring removed items instead of deleting history. Maximum 2 MB.</p>
+      <form method="post" enctype="multipart/form-data" class="form-stack tight" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field"><label for="syllabus_file">JSON file</label><input id="syllabus_file" name="syllabus_file" type="file" accept=".json,application/json"></div>
+        <div class="field"><label for="syllabus_json">Or paste JSON</label><textarea id="syllabus_json" name="syllabus_json" rows="9" placeholder='{"metadata": {...}, "subjects": [...]}'></textarea></div>
+        <label class="checkline"><input type="checkbox" name="make_current" value="yes" checked> Make current for new students</label>
+        <button class="btn btn-primary btn-block" type="submit">Validate & import</button>
+      </form>
+      <p class="fine-print">A failed import rolls back completely. Existing plans are never rewritten by a syllabus import.</p>
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Required shape</p>
+      <h3>Top-level structure</h3>
+      <pre class="mini-code">metadata:
+  board, academic_year,
+  version_label, status
+subjects[]:
+  name, code, units[]
+    name, chapters[]
+      name, estimated_minutes,
+      weightage_marks, topics[]</pre>
+    </section>
+    <div class="callout"><strong>Current version affects onboarding only</strong><p>Existing students remain linked to subjects in the version their plan uses. Activate deliberately.</p></div>
+  </aside>
+</div>
+{% endblock %}

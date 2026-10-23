@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Administrator · {{ app_name }}{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="admin-body">
+<a class="skip-link" href="#admin-main">Skip to content</a>
+{% if admin_authenticated %}
+<header class="admin-topbar">
+  <a class="brand admin-brand" href="{{ url_for('admin.dashboard') }}">
+    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" width="34" height="34">
+    <div><strong>TT Generator</strong><span>Administrator</span></div>
+  </a>
+  <nav class="admin-nav" aria-label="Administrator navigation">
+    <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' }}">Overview</a>
+    <a href="{{ url_for('admin.students') }}" class="{{ 'active' if request.endpoint in ['admin.students','admin.student_detail'] }}">Students</a>
+    <a href="{{ url_for('admin.syllabus') }}" class="{{ 'active' if request.endpoint == 'admin.syllabus' }}">Syllabus</a>
+    <a href="{{ url_for('admin.workload_admin') }}" class="{{ 'active' if request.endpoint in ['admin.workload_admin', 'admin.update_chapter_estimate'] }}">Workload</a>
+    <a href="{{ url_for('admin.planner_admin') }}" class="{{ 'active' if request.endpoint == 'admin.planner_admin' }}">Planner</a>
+    <a href="{{ url_for('admin.system') }}" class="{{ 'active' if request.endpoint == 'admin.system' }}">System</a>
+  </nav>
+  <form method="post" action="{{ url_for('admin.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-small btn-quiet" type="submit">Sign out</button>
+  </form>
+</header>
+{% endif %}
+<main id="admin-main" class="admin-main {{ 'admin-login-main' if not admin_authenticated }}">
+  <div class="flash-stack" aria-live="polite">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="flash flash-{{ category }}">
+      <span>{{ message }}</span>
+      <button type="button" class="flash-close" data-dismiss-flash aria-label="Dismiss">×</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% block content %}{% endblock %}
+  {% if admin_authenticated %}<footer class="site-foot"><span>{{ app_name }} admin · v{{ app_version }}</span><span>Administrative actions are audit-logged.</span></footer>{% endif %}
+</main>
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

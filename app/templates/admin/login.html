@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% block title %}Administrator sign-in · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="admin-login-wrap">
+  <div class="admin-login-card glass">
+    <div class="brand admin-login-brand">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" width="44" height="44">
+      <div><strong>TT Generator</strong><span>Administrator panel</span></div>
+    </div>
+    <p class="eyebrow">Restricted access</p>
+    <h1>One password. No username.</h1>
+    <p class="muted">This panel is for the configured server administrator. The password comes from the protected <code>ADMIN_PASSWORD</code> environment variable.</p>
+    <form method="post" class="form-stack" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.password.label }}
+        {{ form.password(autocomplete="current-password", autofocus=true, placeholder="Administrator password") }}
+        {% for error in form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      {{ form.submit(class="btn btn-primary btn-block") }}
+    </form>
+    <div class="admin-login-meta">
+      <span>Rate-limited · HTTP-only session · {{ config.ADMIN_SESSION_MINUTES }}-minute timeout</span>
+      <a href="{{ url_for('auth.login') }}">Student sign-in →</a>
+    </div>
+  </div>
+  <p class="admin-login-foot">No student credentials can access this panel.</p>
+</div>
+{% endblock %}

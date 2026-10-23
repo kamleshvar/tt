@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+{% block title %}Admin overview · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="admin-page-head">
+  <div><p class="eyebrow">Operations</p><h1>Administrator overview</h1><p>Account, planning and syllabus health at a glance.</p></div>
+  <span class="chip {{ 'chip-good' if db_ok else 'chip-danger' }}">{{ 'Database connected' if db_ok else 'Database unavailable' }}</span>
+</div>
+
+<div class="metric-grid admin-metrics">
+  <div class="metric-card glass"><span class="metric-label">Students</span><strong class="metric-value">{{ total_students }}</strong><span class="metric-note">{{ active_students }} active · {{ inactive_students }} deactivated</span></div>
+  <div class="metric-card glass"><span class="metric-label">Onboarded</span><strong class="metric-value">{{ onboarded }}</strong><span class="metric-note">Class 12 profiles with completed setup</span></div>
+  <div class="metric-card glass"><span class="metric-label">Active plans</span><strong class="metric-value">{{ active_plans }}</strong><span class="metric-note">{{ users_with_plans }} students with plans</span></div>
+  <div class="metric-card glass"><span class="metric-label">Planner issues</span><strong class="metric-value {{ 'text-danger' if plan_issues }}">{{ plan_issues }}</strong><span class="metric-note">active plans marked infeasible</span></div>
+</div>
+
+<div class="admin-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Syllabus configuration</p><h2>Versions in use</h2></div><a class="text-link" href="{{ url_for('admin.syllabus') }}">Manage →</a></div>
+    {% if versions %}
+    <div class="admin-version-list">
+      {% for version in versions %}
+      <div class="admin-version-row">
+        <div><strong>{{ version.board }} · {{ version.academic_year }}</strong><span>{{ version.version_label }} · {{ version.chapter_count }} chapters</span></div>
+        <div class="version-badges"><span class="chip {{ 'chip-good' if version.status == 'validated' else 'chip-warn' }}">{{ version.status_label }}</span>{% if version.is_current %}<span class="chip chip-info">Current</span>{% endif %}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="muted">No syllabus imported. Run <code>flask seed-syllabus</code> or import via the syllabus page.</p>{% endif %}
+    {% set draft_current = current_versions|selectattr('status','equalto','draft')|list %}
+    {% if draft_current %}
+    <div class="alert alert-warning">A DRAFT syllabus is currently used for onboarding. Verify it against the official board document.</div>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Plan health</p><h2>Operational status</h2></div><a class="text-link" href="{{ url_for('admin.planner_admin') }}">Planner admin →</a></div>
+    <div class="summary-lines">
+      <div><span>App version</span><strong>{{ app_version }}</strong></div>
+      <div><span>Class 12 accounts</span><strong>{{ onboarded }}</strong></div>
+      <div><span>Workload risks</span><strong>{{ plan_issues }}</strong></div>
+      <div><span>Database</span><strong>{{ 'OK' if db_ok else 'Error' }}</strong></div>
+    </div>
+    <div class="callout"><strong>No mastery claims</strong><p>Planner feasibility describes time fit. It is never treated as evidence that a student is fully prepared.</p></div>
+  </section>
+
+  <section class="panel span-2">
+    <div class="section-head"><div><p class="eyebrow">Audit</p><h2>Recent administrative activity</h2></div><span class="chip">{{ recent_audit|length }}</span></div>
+    {% if recent_audit %}
+    <div class="audit-list">
+      {% for item in recent_audit %}
+      <div class="audit-row">
+        <span class="audit-action">{{ item.action|replace('_',' ')|title }}</span>
+        <span>{{ item.details or '—' }}</span>
+        <span>{{ item.ip_address or 'local' }}</span>
+        <time>{{ item.created_at|datefmt('%d %b %H:%M') }}</time>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="muted">No administrator actions logged yet.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

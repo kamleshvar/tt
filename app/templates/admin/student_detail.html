@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ student.full_name }} · Admin · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="admin-page-head">
+  <div><p class="eyebrow"><a href="{{ url_for('admin.students') }}">Students</a> / profile</p><h1>{{ student.full_name }}</h1><p>{{ student.email }} · joined {{ student.created_at|datefmt('%d %b %Y') }}</p></div>
+  <div class="head-actions"><span class="chip {{ 'chip-good' if student.is_active else 'chip-danger' }}">{{ 'Active' if student.is_active else 'Deactivated' }}</span><span class="chip {{ 'chip-good' if student.onboarding_complete else 'chip-warn' }}">{{ 'Onboarded' if student.onboarding_complete else 'Not onboarded' }}</span></div>
+</div>
+
+<div class="metric-grid compact">
+  <div class="metric-card glass"><span class="metric-label">Task completion</span><strong class="metric-value">{{ snapshot.task_completion if snapshot else 0 }}%</strong><span class="metric-note">{{ snapshot.tasks.completed if snapshot else 0 }}/{{ snapshot.tasks.total if snapshot else 0 }} tasks</span></div>
+  <div class="metric-card glass"><span class="metric-label">Syllabus coverage</span><strong class="metric-value">{{ snapshot.syllabus_coverage if snapshot else 0 }}%</strong><span class="metric-note">{{ snapshot.chapters_covered if snapshot else 0 }}/{{ snapshot.chapters_total if snapshot else 0 }} chapters</span></div>
+  <div class="metric-card glass"><span class="metric-label">Open / overdue</span><strong class="metric-value">{{ snapshot.tasks.open if snapshot else 0 }}</strong><span class="metric-note">{{ snapshot.tasks.overdue if snapshot else 0 }} overdue</span></div>
+  <div class="metric-card glass"><span class="metric-label">Mocks</span><strong class="metric-value">{{ snapshot.mock_done if snapshot else 0 }}/{{ snapshot.mock_total if snapshot else 0 }}</strong><span class="metric-note">{{ snapshot.mock_completion if snapshot else 0 }}% completed</span></div>
+</div>
+
+{% if plan and (not plan.feasible or plan.warnings) %}
+<div class="banner banner-warn"><div><strong>Plan is {{ 'infeasible' if not plan.feasible else 'flagged' }}</strong>{% for warning in plan.warnings %}<p>{{ warning }}</p>{% endfor %}</div></div>
+{% endif %}
+
+<div class="admin-grid">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Student record</p><h2>Setup</h2></div></div>
+    <div class="summary-lines">
+      <div><span>Board</span><strong>{{ student.profile.board or '—' }}</strong></div>
+      <div><span>Academic year</span><strong>{{ student.profile.academic_year or '—' }}</strong></div>
+      <div><span>Exam date</span><strong>{{ student.profile.exam_date|datefmt('%d %b %Y') if student.profile.exam_date else 'Not set' }}</strong></div>
+      <div><span>Last sign-in</span><strong>{{ student.last_login_at|datefmt('%d %b %Y %H:%M') if student.last_login_at else 'Never' }}</strong></div>
+      <div><span>Password change required</span><strong>{{ 'Yes' if student.must_change_password else 'No' }}</strong></div>
+    </div>
+    <div class="chip-row section-block">
+      {% for link in subjects %}<span class="chip">{{ link.syllabus_subject.name }} · confidence {{ link.confidence }}/5</span>{% else %}<span class="muted">No active subjects.</span>{% endfor %}
+    </div>
+    {% if exams %}
+    <div class="section-block"><p class="eyebrow">Exam dates</p><ul class="plain-list">{% for exam in exams %}<li><span>{{ exam.title }}{% if exam.is_primary %} · primary{% endif %}</span><strong>{{ exam.exam_date|datefmt('%d %b %Y') }}</strong></li>{% endfor %}</ul></div>
+    {% endif %}
+  </section>
+
+  <aside class="admin-side">
+    <section class="panel soft-panel">
+      <p class="eyebrow">Account access</p><h2>{{ 'Deactivate' if student.is_active else 'Restore' }} account</h2>
+      <p>{{ 'Immediately ends access and invalidates existing student sessions.' if student.is_active else 'Restores the account. The student can sign in with their existing password.' }}</p>
+      <form method="post" action="{{ url_for('admin.toggle_student', user_id=student.id) }}" data-confirm="{{ 'Deactivate this student? Their current session will be invalidated.' if student.is_active else 'Restore access for this student?' }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn {{ 'btn-danger' if student.is_active else 'btn-primary' }}" type="submit">{{ 'Deactivate student' if student.is_active else 'Restore student' }}</button>
+      </form>
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Credential recovery</p><h2>Reset password</h2>
+      <p>No email is sent. Share the temporary password through a secure channel. The student must change it at next sign-in.</p>
+      <form method="post" action="{{ url_for('admin.reset_password', user_id=student.id) }}" class="form-stack tight" data-confirm="Reset this student's password and invalidate their sessions?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field"><label for="new_password">Temporary password</label><input id="new_password" name="new_password" type="password" minlength="12" required autocomplete="new-password"></div>
+        <div class="field"><label for="confirm_password">Confirm password</label><input id="confirm_password" name="confirm_password" type="password" minlength="12" required autocomplete="new-password"></div>
+        <button class="btn" type="submit">Reset password</button>
+      </form>
+    </section>
+    <section class="panel soft-panel">
+      <p class="eyebrow">Planner</p><h2>Regenerate plan</h2>
+      <p>Completed tasks are preserved. Only an active plan is replaced. The planner will not claim coverage it cannot schedule.</p>
+      <form method="post" action="{{ url_for('admin.regenerate_student_plan', user_id=student.id) }}" data-confirm="Regenerate this student's plan now? Completed work will be preserved.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="confirm" value="yes">
+        <button class="btn btn-quiet" type="submit" {{ 'disabled' if not student.onboarding_complete }}>Regenerate active plan</button>
+      </form>
+    </section>
+  </aside>
+</div>
+
+<div class="admin-grid section-block">
+  <section class="panel">
+    <div class="section-head"><div><p class="eyebrow">Recent work</p><h2>Latest tasks</h2></div><span class="chip">{{ tasks|length }}</span></div>
+    {% if tasks %}
+    <div class="admin-task-list">
+      {% for task in tasks %}
+      <div class="admin-task-row">
+        <span class="task-type type-{{ task.task_type }}"></span>
+        <div><strong>{{ task.title }}</strong><span>{{ task.scheduled_date|datefmt('%d %b %Y') }}{% if task.time_label %} · {{ task.time_label }}{% endif %}{% if task.syllabus_chapter %} · {{ task.syllabus_chapter.name }}{% endif %}</span></div>
+        <span class="chip status-{{ task.status }}">{{ task.status|replace('_',' ') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="muted">No tasks generated yet.</p>{% endif %}
+  </section>
+
+  <aside class="admin-side">
+    <section class="panel">
+      <p class="eyebrow">Plan state</p><h2>Active plan</h2>
+      {% if plan %}
+      <div class="summary-lines">
+        <div><span>Version</span><strong>v{{ plan.version_number }}</strong></div>
+        <div><span>Horizon</span><strong>{{ plan.horizon_start|datefmt('%d %b') }} – {{ plan.horizon_end|datefmt('%d %b %Y') }}</strong></div>
+        <div><span>Feasible</span><strong>{{ 'Yes' if plan.feasible else 'No — review warnings' }}</strong></div>
+        <div><span>Generated</span><strong>{{ plan.generated_at|datefmt('%d %b %Y %H:%M') }}</strong></div>
+        <div><span>Syllabus</span><strong>{{ plan.syllabus_version.version_label }} · {{ plan.syllabus_version.status_label }}</strong></div>
+      </div>
+      {% else %}<p class="muted">No active plan. The student must complete onboarding before one can be generated.</p>{% endif %}
+    </section>
+    <section class="panel">
+      <p class="eyebrow">Activity</p><h2>Student activity</h2>
+      {% if activity %}
+      <ul class="timeline-list compact-list">{% for item in activity %}<li><span class="timeline-date">{{ item.created_at|datefmt('%d %b') }}</span><div><strong>{{ item.action|replace('_',' ')|title }}</strong><span>{{ item.entity_type or 'account' }}{% if item.entity_id %} #{{ item.entity_id }}{% endif %}</span></div></li>{% endfor %}</ul>
+      {% else %}<p class="muted">No activity recorded.</p>{% endif %}
+    </section>
+    <section class="panel">
+      <p class="eyebrow">Audit trail</p><h2>Admin actions</h2>
+      {% if audits %}
+      <ul class="timeline-list compact-list">{% for item in audits %}<li><span class="timeline-date">{{ item.created_at|datefmt('%d %b') }}</span><div><strong>{{ item.action|replace('_',' ')|title }}</strong><span>{{ item.details or '—' }}</span></div></li>{% endfor %}</ul>
+      {% else %}<p class="muted">No administrator actions for this student.</p>{% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}
